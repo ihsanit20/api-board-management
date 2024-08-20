@@ -34,6 +34,7 @@ Route::get('/zamats', [ZamatController::class, 'index']);
 Route::get('/zamats/{id}', [ZamatController::class, 'show']);
 
 Route::get('/exams', [ExamController::class, 'index']);
+Route::get('/exams/last', [ExamController::class, 'showLast']);
 Route::get('/exams/{id}', [ExamController::class, 'show']);
 
 Route::get('/areas', [AreaController::class, 'index']);

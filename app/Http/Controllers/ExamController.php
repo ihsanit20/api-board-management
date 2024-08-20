@@ -41,6 +41,15 @@ class ExamController extends Controller
     }
 
     /**
+     * Display the specified resource.
+     */
+    public function showLast()
+    {
+        $exam = Exam::latest('id')->first();
+        return response()->json($exam);
+    }
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)

@@ -26,16 +26,17 @@ class FeeController extends Controller
     {
         // Validate the request data
         $validatedData = $request->validate([
-            'exam_id' => 'required|exists:exams,id',
-            'zamat_id' => 'nullable|exists:zamats,id',
-            'amount' => 'required|integer|min:0',
-            'ext_amount' => 'required|integer|min:0',
+            'fees' => 'required|array',
         ]);
 
-        // Create a new fee entry
-        $fee = Fee::create($validatedData);
+        $fees = [];
 
-        return response()->json($fee, Response::HTTP_CREATED);
+        // Create a new fee entry
+        foreach($validatedData["fees"] as $fee) {
+            $fees[] = Fee::create($fee);
+        }
+
+        return response()->json($fees, Response::HTTP_CREATED);
     }
 
     /**
