@@ -1,14 +1,13 @@
 <?php
 
 use App\Http\Controllers\AreaController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ExamController;
+use App\Http\Controllers\FeeController;
 use App\Http\Controllers\InstituteController;
 use App\Http\Controllers\ZamatController;
-use App\Models\Exam;
-use App\Models\Zamat;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,6 +39,8 @@ Route::get('/exams/{id}', [ExamController::class, 'show']);
 Route::get('/areas', [AreaController::class, 'index']);
 Route::get('/areas/{id}', [AreaController::class, 'show']);
 
+Route::get('/fees', [FeeController::class, 'index']);
+Route::get('/fees/{id}', [FeeController::class, 'show']);
 
 // Protected routes (store, update, and destroy)
 Route::middleware('auth:sanctum')->group(function () {
@@ -59,4 +60,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/areas', [AreaController::class, 'store']);
     Route::put('/areas/{id}', [AreaController::class, 'update']);
     Route::delete('/areas/{id}', [AreaController::class, 'destroy']);
+
+    Route::post('/fees', [FeeController::class, 'store']);
+    Route::put('/fees/{id}', [FeeController::class, 'update']);
+    Route::delete('/fees/{id}', [FeeController::class, 'destroy']);
 });
