@@ -14,12 +14,14 @@ return new class extends Migration
         Schema::create('institutes', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('phone');
+            $table->string('phone')->nullable();
             $table->unsignedBigInteger('area_id');
             $table->foreign('area_id')->references('id')->on('areas')->onDelete('cascade');
             $table->boolean('is_active')->default(1);
             $table->boolean('is_center')->default(0);
             $table->timestamps();
+
+            $table->unique(['name', 'phone']);
         });
     }
 
