@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('exam_id')->index();
             $table->unsignedBigInteger('zamat_id')->nullable()->index()->comment('If zamat_id is null, then applies to all zamats');
             $table->unsignedInteger('amount');
-            $table->unsignedInteger('ext_amount');
+            $table->unsignedInteger('late_fee');
             $table->timestamps();
 
             $table->foreign('exam_id')->references('id')->on('exams')->onDelete('cascade');

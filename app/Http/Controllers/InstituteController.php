@@ -13,7 +13,7 @@ class InstituteController extends Controller
     public function index()
     {
         // Retrieve all institutes
-        $institutes = Institute::all();
+        $institutes = Institute::with('area')->get();
         return response()->json($institutes);
     }
 

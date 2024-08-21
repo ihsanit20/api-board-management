@@ -18,7 +18,7 @@ class Fee extends Model
         'exam_id',
         'zamat_id',
         'amount',
-        'ext_amount',
+        'late_fee',
     ];
 
     /**

@@ -60,7 +60,7 @@ class FeeController extends Controller
             'exam_id' => 'required|exists:exams,id',
             'zamat_id' => 'nullable|exists:zamats,id',
             'amount' => 'required|integer|min:0',
-            'ext_amount' => 'required|integer|min:0',
+            'late_fee' => 'required|integer|min:0',
         ]);
 
         // Find the fee by ID and update it
