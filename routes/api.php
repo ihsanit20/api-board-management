@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DepartmentController; 
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\FeeController;
 use App\Http\Controllers\InstituteController;
@@ -27,6 +28,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+Route::get('/departments', [DepartmentController::class, 'index']);
+Route::get('/departments/{id}', [DepartmentController::class, 'show']);
+
 Route::get('/institutes', [InstituteController::class, 'index']);
 Route::get('/institutes/{id}', [InstituteController::class, 'show']);
 
@@ -49,6 +53,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/institutes', [InstituteController::class, 'store']);
     Route::put('/institutes/{id}', [InstituteController::class, 'update']);
     Route::delete('/institutes/{id}', [InstituteController::class, 'destroy']);
+
+    Route::post('/departments', [DepartmentController::class, 'store']); 
+    Route::put('/departments/{id}', [DepartmentController::class, 'update']); 
+    Route::delete('/departments/{id}', [DepartmentController::class, 'destroy']);
 
     Route::post('/zamats', [ZamatController::class, 'store']);
     Route::put('/zamats/{id}', [ZamatController::class, 'update']);

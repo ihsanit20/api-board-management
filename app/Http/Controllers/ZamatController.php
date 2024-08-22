@@ -13,7 +13,7 @@ class ZamatController extends Controller
     public function index()
     {
         // Retrieve all zamats
-        $zamats = Zamat::all();
+        $zamats = Zamat::with('department')->get();
         return response()->json($zamats);
     }
 
@@ -26,6 +26,7 @@ class ZamatController extends Controller
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'is_active' => 'boolean',
+            'department_id' => 'required|exists:departments,id',
         ]);
 
         // Create a new zamat
@@ -54,6 +55,7 @@ class ZamatController extends Controller
         $validatedData = $request->validate([
             'name' => 'string|max:255',
             'is_active' => 'boolean',
+            'department_id' => 'required|exists:departments,id',
         ]);
 
         // Find the zamat by ID and update it

@@ -8,5 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 class Zamat extends Model
 {
     use HasFactory;
-    protected $fillable = ['name', 'is_active'];
+
+    protected $fillable = [
+        'name',
+        'is_active',
+        'department_id',
+    ];
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
 }
