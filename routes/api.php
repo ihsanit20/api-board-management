@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DepartmentController; 
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\FeeController;
+use App\Http\Controllers\GroupController;
 use App\Http\Controllers\InstituteController;
 use App\Http\Controllers\ZamatController;
 use Illuminate\Http\Request;
@@ -47,6 +48,9 @@ Route::get('/areas/{id}', [AreaController::class, 'show']);
 Route::get('/fees', [FeeController::class, 'index']);
 Route::get('/fees/{id}', [FeeController::class, 'show']);
 
+Route::get('/groups', [GroupController::class, 'index']); // List all groups
+Route::get('/groups/{id}', [GroupController::class, 'show']);
+
 // Protected routes (store, update, and destroy)
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -73,4 +77,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/fees', [FeeController::class, 'store']);
     Route::put('/fees/{id}', [FeeController::class, 'update']);
     Route::delete('/fees/{id}', [FeeController::class, 'destroy']);
+
+    Route::post('/groups', [GroupController::class, 'store']); // Create a new group
+    Route::put('/groups/{id}', [GroupController::class, 'update']); // Update a group
+    Route::delete('/groups/{id}', [GroupController::class, 'destroy']);
 });
