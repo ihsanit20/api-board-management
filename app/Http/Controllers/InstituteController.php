@@ -10,10 +10,20 @@ class InstituteController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Retrieve all institutes
-        $institutes = Institute::with('area')->get();
+        // Check if area_id is provided in the request
+        $areaId = $request->input('area_id');
+    
+        // Retrieve institutes, filtering by area_id if provided
+        $query = Institute::with('area');
+    
+        if ($areaId) {
+            $query->where('area_id', $areaId);
+        }
+    
+        $institutes = $query->get();
+    
         return response()->json($institutes);
     }
 

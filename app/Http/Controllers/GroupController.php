@@ -10,12 +10,23 @@ class GroupController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Groups with related Zamat data
-        $groups = Group::with('zamat')->get();
+        // Check if zamat_id is provided in the request
+        $zamatId = $request->input('zamat_id');
+    
+        // Retrieve groups, filtering by zamat_id if provided
+        $query = Group::with('zamat');
+    
+        if ($zamatId) {
+            $query->where('zamat_id', $zamatId);
+        }
+    
+        $groups = $query->get();
+    
         return response()->json($groups);
     }
+    
 
     /**
      * Store a newly created resource in storage.

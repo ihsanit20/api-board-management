@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DepartmentController; 
@@ -78,7 +79,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/fees/{id}', [FeeController::class, 'update']);
     Route::delete('/fees/{id}', [FeeController::class, 'destroy']);
 
-    Route::post('/groups', [GroupController::class, 'store']); // Create a new group
-    Route::put('/groups/{id}', [GroupController::class, 'update']); // Update a group
+    Route::post('/groups', [GroupController::class, 'store']);
+    Route::put('/groups/{id}', [GroupController::class, 'update']); 
     Route::delete('/groups/{id}', [GroupController::class, 'destroy']);
+
+    Route::get('/applications', [ApplicationController::class, 'index']);    
+    Route::post('/applications', [ApplicationController::class, 'store']);
+    Route::get('/applications/{id}', [ApplicationController::class, 'show']);
+    Route::put('/applications/{id}', [ApplicationController::class, 'update']);
+    Route::delete('/applications/{id}', [ApplicationController::class, 'destroy']);
 });
