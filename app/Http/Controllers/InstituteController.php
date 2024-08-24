@@ -14,12 +14,17 @@ class InstituteController extends Controller
     {
         // Check if area_id is provided in the request
         $areaId = $request->input('area_id');
+        $is_center = $request->input('is_center');
     
         // Retrieve institutes, filtering by area_id if provided
         $query = Institute::with('area');
     
         if ($areaId) {
             $query->where('area_id', $areaId);
+        }
+
+        if ($is_center) {
+            $query->where('is_center', 1);
         }
     
         $institutes = $query->get();

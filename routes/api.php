@@ -3,6 +3,7 @@
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CenterController;
 use App\Http\Controllers\DepartmentController; 
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\FeeController;
@@ -52,6 +53,9 @@ Route::get('/fees/{id}', [FeeController::class, 'show']);
 Route::get('/groups', [GroupController::class, 'index']); // List all groups
 Route::get('/groups/{id}', [GroupController::class, 'show']);
 
+Route::get('/centers', [CenterController::class, 'index']); // List all groups
+Route::get('/centers/{id}', [CenterController::class, 'show']);
+
 // Protected routes (store, update, and destroy)
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -82,6 +86,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/groups', [GroupController::class, 'store']);
     Route::put('/groups/{id}', [GroupController::class, 'update']); 
     Route::delete('/groups/{id}', [GroupController::class, 'destroy']);
+
+    Route::post('/centers', [CenterController::class, 'store']);
+    Route::put('/centers/{id}', [CenterController::class, 'update']); 
+    Route::delete('/centers/{id}', [CenterController::class, 'destroy']);
 
     Route::get('/applications', [ApplicationController::class, 'index']);    
     Route::post('/applications', [ApplicationController::class, 'store']);
