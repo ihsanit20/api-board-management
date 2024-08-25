@@ -9,17 +9,10 @@ class Application extends Model
 {
     use HasFactory;
 
-    // Fillable attributes
-    protected $fillable = [
-        'exam_id',
-        'zamat_id',
-        'institute_id',
-        'status',
-        'payment_status',
-        'payment_method',
-        'total_amount',
-        'submitted_by',
-        'approved_by',
+    protected $guarded = [];
+
+    protected $casts = [
+        'students' => 'json'
     ];
 
     // Relationships

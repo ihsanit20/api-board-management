@@ -14,18 +14,15 @@ class CreateStudentsTable extends Migration
     public function up()
     {
         Schema::create('students', function (Blueprint $table) {
-            $table->id();
+            $table->id(); // id as roll
             $table->string('registration')->unique();
+            $table->foreignId('application_id')->constrained();
             $table->string('name');
             $table->string('name_arabic')->nullable();
             $table->string('father_name');
             $table->string('father_name_arabic')->nullable();
             $table->date('date_of_birth');
-            $table->string('address');
-            $table->foreignId('area_id')->constrained();
-            $table->foreignId('institute_id')->constrained();
-            $table->foreignId('zamat_id')->constrained();
-            $table->foreignId('exam_id')->constrained();
+            $table->string('address')->nullable();
             $table->timestamps();
         });
     }

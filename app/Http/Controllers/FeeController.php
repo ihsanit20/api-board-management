@@ -50,6 +50,27 @@ class FeeController extends Controller
         return response()->json($fee, Response::HTTP_OK);
     }
 
+    public function feeByExamAndZamat(Request $request)
+    {
+        $request->validate([
+            'exam_id'   => 'required',
+            'zamat_id'  => 'required',  
+        ]);
+
+        $exam_id = $request->exam_id;
+        $zamat_id = $request->zamat_id;
+        
+        $fee = Fee::query()
+            ->where('exam_id', $exam_id)
+            ->where(function ($query) use ($zamat_id) {
+                $query->where('zamat_id', $zamat_id)
+                    ->orWhereNull('zamat_id');
+            })
+            ->first();
+
+        return response()->json($fee, Response::HTTP_OK);
+    }
+
     /**
      * Update the specified resource in storage.
      */

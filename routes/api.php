@@ -49,6 +49,7 @@ Route::get('/areas/{id}', [AreaController::class, 'show']);
 
 Route::get('/fees', [FeeController::class, 'index']);
 Route::get('/fees/{id}', [FeeController::class, 'show']);
+Route::get('/fee-by-exam-and-zamat', [FeeController::class, 'feeByExamAndZamat']);
 
 Route::get('/groups', [GroupController::class, 'index']); // List all groups
 Route::get('/groups/{id}', [GroupController::class, 'show']);

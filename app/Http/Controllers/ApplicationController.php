@@ -12,7 +12,7 @@ class ApplicationController extends Controller
 {
     public function index()
     {
-        $applications = Application::with(['zamat', 'institute'])->get();
+        $applications = Application::with(['exam', 'zamat', 'institute'])->get();
         return response()->json($applications);
     }
 
@@ -20,62 +20,34 @@ class ApplicationController extends Controller
     {
         $request->validate([
             'exam_id' => 'required|exists:exams,id',
-            'zamat_id' => 'required|exists:zamats,id',
             'institute_id' => 'required|exists:institutes,id',
+            'zamat_id' => 'required|exists:zamats,id',
+            'group_id' => 'nullable|exists:groups,id',
+
             'students' => 'required|array|min:1',
-            'students.*.registration' => 'required|string|max:255',
+
             'students.*.name' => 'required|string|max:255',
             'students.*.name_arabic' => 'nullable|string|max:255',
             'students.*.father_name' => 'required|string|max:255',
             'students.*.father_name_arabic' => 'nullable|string|max:255',
             'students.*.date_of_birth' => 'required|date',
-            'students.*.address' => 'required|string|max:255',
-            'students.*.area_id' => 'required|exists:areas,id',
-            'payment_method' => 'required|in:Online,Offline',
+            'students.*.address' => 'nullable|string|max:255',
+
             'total_amount' => 'required|numeric',
         ]);
 
-        DB::beginTransaction();
-        try {
-            $application = Application::create([
-                'exam_id' => $request->exam_id,
-                'zamat_id' => $request->zamat_id,
-                'institute_id' => $request->institute_id,
-                'status' => 'Pending',
-                'payment_status' => 'Pending',
-                'payment_method' => $request->payment_method,
-                'total_amount' => $request->total_amount,
-                'submitted_by' => Auth::id(),
-            ]);
+        $application = Application::create([
+            'exam_id' => $request->exam_id,
+            'institute_id' => $request->institute_id,
+            'zamat_id' => $request->zamat_id,
+            'status' => 'Pending',
+            'payment_status' => 'Pending',
+            'total_amount' => $request->total_amount,
+            'submitted_by' => Auth::id(),
+            'students' => $request->students,
+        ]);
 
-            foreach ($request->students as $studentData) {
-                $application->students()->create([
-                    'registration' => $studentData['registration'],
-                    'name' => $studentData['name'],
-                    'name_arabic' => $studentData['name_arabic'] ?? null,
-                    'father_name' => $studentData['father_name'],
-                    'father_name_arabic' => $studentData['father_name_arabic'] ?? null,
-                    'date_of_birth' => $studentData['date_of_birth'],
-                    'address' => $studentData['address'],
-                    'area_id' => $studentData['area_id'],
-                    'institute_id' => $request->institute_id,
-                    'zamat_id' => $request->zamat_id,
-                    'exam_id' => $request->exam_id,
-                ]);
-            }
-
-            if ($request->payment_method === 'Online') {
-                $this->completePayment($application);
-            }
-
-            DB::commit();
-
-            return response()->json(['message' => 'Application submitted successfully', 'application' => $application], 201);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['message' => 'Application submission failed', 'error' => $e->getMessage()], 500);
-        }
+        return response()->json(['message' => 'Application submitted successfully', 'application' => $application], 201);
     }
 
     public function show($id)
