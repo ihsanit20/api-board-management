@@ -19,8 +19,8 @@ return new class extends Migration
             $table->unsignedInteger('late_fee');
             $table->timestamps();
 
-            $table->foreign('exam_id')->references('id')->on('exams')->onDelete('cascade');
-            $table->foreign('zamat_id')->references('id')->on('zamats')->onDelete('cascade');
+            $table->foreign('exam_id')->references('id')->on('exams')->onDelete('restrict');
+            $table->foreign('zamat_id')->references('id')->on('zamats')->onDelete('restrict');
         });
     }
 

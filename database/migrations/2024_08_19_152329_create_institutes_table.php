@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('phone')->nullable();
             $table->unsignedBigInteger('area_id');
-            $table->foreign('area_id')->references('id')->on('areas')->onDelete('cascade');
+            $table->foreign('area_id')->references('id')->on('areas')->onDelete('restrict');
             $table->boolean('is_active')->default(1);
             $table->boolean('is_center')->default(0);
             $table->timestamps();

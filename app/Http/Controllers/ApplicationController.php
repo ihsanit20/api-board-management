@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
+use App\Models\Student; // Student মডেল ইম্পোর্ট করতে হবে
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -104,6 +105,11 @@ class ApplicationController extends Controller
             'payment_status' => $request->status,
         ]);
 
+        // Check if both payment status is 'Paid' and application status is 'Approved'
+        if ($request->status === 'Paid' && $application->status === 'Approved') {
+            $this->storeStudents($application);
+        }
+
         return response()->json(['message' => 'Payment status updated successfully', 'application' => $application]);
     }
 
@@ -120,6 +126,53 @@ class ApplicationController extends Controller
             'approved_by' => $request->status === 'Approved' ? Auth::id() : null,
         ]);
 
+        // Check if both payment status is 'Paid' and application status is 'Approved'
+        if ($request->status === 'Approved' && $application->payment_status === 'Paid') {
+            $this->storeStudents($application);
+        }
+
         return response()->json(['message' => 'Application status updated successfully', 'application' => $application]);
+    }
+
+    private function storeStudents($application)
+    {
+        foreach ($application->students as $studentData) {
+            Student::create([
+                'application_id' => $application->id,
+                'exam_id' => $application->exam_id,
+                'institute_id' => $application->institute_id,
+                'zamat_id' => $application->zamat_id,
+                'group_id' => $application->group_id,
+                'area_id' => $application->area_id,
+                'center_id' => $application->center_id,
+                'name' => $studentData['name'],
+                'name_arabic' => $studentData['name_arabic'],
+                'father_name' => $studentData['father_name'],
+                'father_name_arabic' => $studentData['father_name_arabic'],
+                'date_of_birth' => $studentData['date_of_birth'],
+                'address' => $studentData['address'],
+                'gender' => $application->gender,
+                'roll_number' => $this->generateUniqueRollNumber(),
+                'registration_number' => $this->generateUniqueRegistrationNumber(),
+            ]);
+        }
+    }
+
+    private function generateUniqueRollNumber()
+    {
+        do {
+            $rollNumber = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
+        } while (Student::where('roll_number', $rollNumber)->exists());
+
+        return $rollNumber;
+    }
+
+    private function generateUniqueRegistrationNumber()
+    {
+        do {
+            $registrationNumber = str_pad(mt_rand(1, 999999999), 9, '0', STR_PAD_LEFT);
+        } while (Student::where('registration_number', $registrationNumber)->exists());
+
+        return $registrationNumber;
     }
 }

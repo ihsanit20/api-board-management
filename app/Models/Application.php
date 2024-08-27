@@ -54,4 +54,9 @@ class Application extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
+
+    public function students()
+    {
+        return $this->hasMany(Student::class);
+    }
 }

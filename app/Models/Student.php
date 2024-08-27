@@ -2,55 +2,45 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Student extends Model
 {
-    use HasFactory;
+    protected $guarded = [];
 
-    /**
-     * The attributes that are mass assignable.
-     */
-    protected $fillable = [
-        'registration',
-        'name',
-        'name_arabic',
-        'father_name',
-        'father_name_arabic',
-        'date_of_birth',
-        'address',
-        'area_id',
-        'institute_id',
-        'zamat_id',
-        'exam_id',
-    ];
-
-    /**
-     * The relationships between Student and other models.
-     */
-
-    // A student belongs to a specific Zamat (class)
-    public function zamat()
+    public function application(): BelongsTo
     {
-        return $this->belongsTo(Zamat::class);
+        return $this->belongsTo(Application::class);
     }
 
-    // A student belongs to a specific Institute
-    public function institute()
+    public function exam(): BelongsTo
+    {
+        return $this->belongsTo(Exam::class);
+    }
+
+    public function institute(): BelongsTo
     {
         return $this->belongsTo(Institute::class);
     }
 
-    // A student belongs to a specific Area
-    public function area()
+    public function zamat(): BelongsTo
+    {
+        return $this->belongsTo(Zamat::class);
+    }
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(Group::class);
+    }
+
+    public function area(): BelongsTo
     {
         return $this->belongsTo(Area::class);
     }
 
-    // A student belongs to a specific Exam
-    public function exam()
+    public function center(): BelongsTo
     {
-        return $this->belongsTo(Exam::class);
+        return $this->belongsTo(Center::class);
     }
 }

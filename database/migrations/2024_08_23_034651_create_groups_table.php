@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('name');
             $table->timestamps();
 
-            $table->foreign('zamat_id')->references('id')->on('zamats')->onDelete('cascade');
+            $table->foreign('zamat_id')->references('id')->on('zamats')->onDelete('restrict');
         });
     }
 

@@ -9,6 +9,7 @@ use App\Http\Controllers\ExamController;
 use App\Http\Controllers\FeeController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\InstituteController;
+use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ZamatController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -51,11 +52,14 @@ Route::get('/fees', [FeeController::class, 'index']);
 Route::get('/fees/{id}', [FeeController::class, 'show']);
 Route::get('/fee-by-exam-and-zamat', [FeeController::class, 'feeByExamAndZamat']);
 
-Route::get('/groups', [GroupController::class, 'index']); // List all groups
+Route::get('/groups', [GroupController::class, 'index']); 
 Route::get('/groups/{id}', [GroupController::class, 'show']);
 
-Route::get('/centers', [CenterController::class, 'index']); // List all groups
+Route::get('/centers', [CenterController::class, 'index']); 
 Route::get('/centers/{id}', [CenterController::class, 'show']);
+
+Route::get('/students', [StudentController::class, 'index']); 
+Route::get('/students/{id}', [StudentController::class, 'show']);
 
 // Protected routes (store, update, and destroy)
 Route::middleware('auth:sanctum')->group(function () {
@@ -99,4 +103,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/applications/{id}', [ApplicationController::class, 'destroy']);
     Route::put('/applications/{id}/update-payment-status', [ApplicationController::class, 'updatePaymentStatus']);
     Route::put('/applications/{id}/update-status', [ApplicationController::class, 'updateApplicationStatus']);
+
+    Route::post('/students', [StudentController::class, 'store']);
+    Route::put('/students/{id}', [StudentController::class, 'update']); 
+    Route::delete('/students/{id}', [StudentController::class, 'destroy']);
 });
