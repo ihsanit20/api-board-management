@@ -10,6 +10,7 @@ use App\Http\Controllers\FeeController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\InstituteController;
 use App\Http\Controllers\NoticeController;
+use App\Http\Controllers\SiteSettingsController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ZamatController;
 use Illuminate\Http\Request;
@@ -65,8 +66,18 @@ Route::get('/students/{id}', [StudentController::class, 'show']);
 Route::get('/notices', [NoticeController::class, 'index']); 
 Route::get('/notices/{id}', [NoticeController::class, 'show']);
 
+// Site Settings API routes
+Route::prefix('site-settings')->group(function () {
+    Route::get('/scrolling-notice', [SiteSettingsController::class, 'showScrollingNotice']);
+    Route::get('/director-message', [SiteSettingsController::class, 'showDirectorMessage']);
+    Route::get('/about-us', [SiteSettingsController::class, 'showAboutUs']);
+});
+
 // Protected routes (store, update, and destroy)
 Route::middleware('auth:sanctum')->group(function () {
+    Route::put('/site-settings/scrolling-notice', [SiteSettingsController::class, 'updateScrollingNotice']);
+    Route::put('/site-settings/director-message', [SiteSettingsController::class, 'updateDirectorMessage']);
+    Route::put('/site-settings/about-us', [SiteSettingsController::class, 'updateAboutUs']);
 
     Route::post('/institutes', [InstituteController::class, 'store']);
     Route::put('/institutes/{id}', [InstituteController::class, 'update']);
