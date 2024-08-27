@@ -9,6 +9,7 @@ use App\Http\Controllers\ExamController;
 use App\Http\Controllers\FeeController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\InstituteController;
+use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ZamatController;
 use Illuminate\Http\Request;
@@ -61,6 +62,9 @@ Route::get('/centers/{id}', [CenterController::class, 'show']);
 Route::get('/students', [StudentController::class, 'index']); 
 Route::get('/students/{id}', [StudentController::class, 'show']);
 
+Route::get('/notices', [NoticeController::class, 'index']); 
+Route::get('/notices/{id}', [NoticeController::class, 'show']);
+
 // Protected routes (store, update, and destroy)
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -102,9 +106,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/applications/{id}', [ApplicationController::class, 'update']);
     Route::delete('/applications/{id}', [ApplicationController::class, 'destroy']);
     Route::put('/applications/{id}/update-payment-status', [ApplicationController::class, 'updatePaymentStatus']);
-    // Route::put('/applications/{id}/update-status', [ApplicationController::class, 'updateApplicationStatus']);
 
     Route::post('/students', [StudentController::class, 'store']);
     Route::put('/students/{id}', [StudentController::class, 'update']); 
     Route::delete('/students/{id}', [StudentController::class, 'destroy']);
+
+    Route::post('/notices', [NoticeController::class, 'store']);
+    Route::put('/notices/{id}', [NoticeController::class, 'update']); 
+    Route::delete('/notices/{id}', [NoticeController::class, 'destroy']);
 });
