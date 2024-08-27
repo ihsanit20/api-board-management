@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
-use App\Models\Student; // Student মডেল ইম্পোর্ট করতে হবে
+use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -53,7 +53,7 @@ class ApplicationController extends Controller
             'zamat_id' => 'required|exists:zamats,id',
             'group_id' => 'nullable|exists:groups,id',
             'area_id' => 'nullable|exists:areas,id',
-            'center_id' => 'nullable|exists:centers,id',
+            'center_id' => 'nullable|exists:institutes,id',
             
             'gender' => 'required|in:male,female',
 
@@ -79,7 +79,6 @@ class ApplicationController extends Controller
                 'group_id' => $request->group_id,
                 'center_id' => $request->center_id,
                 'gender' => $request->gender,
-                'status' => 'Pending',
                 'payment_status' => 'Pending',
                 'total_amount' => $request->total_amount,
                 'payment_method' => $request->payment_method,
@@ -96,83 +95,44 @@ class ApplicationController extends Controller
     public function updatePaymentStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|string|in:Pending,Paid,Failed',
+            'payment_status' => 'required|in:Pending,Paid',
         ]);
 
-        $application = Application::findOrFail($id);
+        try {
+            $application = Application::findOrFail($id);
+            $application->update(['payment_status' => $request->payment_status]);
 
-        $application->update([
-            'payment_status' => $request->status,
-        ]);
+            if ($request->payment_status === 'Paid') {
+                foreach ($application->students as $studentData) {
+                    Student::create([
+                        'application_id' => $application->id,
+                        'exam_id' => $application->exam_id,
+                        'institute_id' => $application->institute_id,
+                        'zamat_id' => $application->zamat_id,
+                        'group_id' => $application->group_id,
+                        'area_id' => $application->area_id,
+                        'center_id' => $application->center_id,
+                        'name' => $studentData['name'],
+                        'name_arabic' => $studentData['name_arabic'],
+                        'father_name' => $studentData['father_name'],
+                        'father_name_arabic' => $studentData['father_name_arabic'],
+                        'date_of_birth' => $studentData['date_of_birth'],
+                        'address' => $studentData['address'],
+                        'gender' => $application->gender,
+                        'registration_number' => $this->generateRegistrationNumber(),
+                    ]);
+                }
+            }
 
-        // Check if both payment status is 'Paid' and application status is 'Approved'
-        if ($request->status === 'Paid' && $application->status === 'Approved') {
-            $this->storeStudents($application);
-        }
-
-        return response()->json(['message' => 'Payment status updated successfully', 'application' => $application]);
-    }
-
-    public function updateApplicationStatus(Request $request, $id)
-    {
-        $request->validate([
-            'status' => 'required|string|in:Pending,Approved,Rejected',
-        ]);
-
-        $application = Application::findOrFail($id);
-
-        $application->update([
-            'status' => $request->status,
-            'approved_by' => $request->status === 'Approved' ? Auth::id() : null,
-        ]);
-
-        // Check if both payment status is 'Paid' and application status is 'Approved'
-        if ($request->status === 'Approved' && $application->payment_status === 'Paid') {
-            $this->storeStudents($application);
-        }
-
-        return response()->json(['message' => 'Application status updated successfully', 'application' => $application]);
-    }
-
-    private function storeStudents($application)
-    {
-        foreach ($application->students as $studentData) {
-            Student::create([
-                'application_id' => $application->id,
-                'exam_id' => $application->exam_id,
-                'institute_id' => $application->institute_id,
-                'zamat_id' => $application->zamat_id,
-                'group_id' => $application->group_id,
-                'area_id' => $application->area_id,
-                'center_id' => $application->center_id,
-                'name' => $studentData['name'],
-                'name_arabic' => $studentData['name_arabic'],
-                'father_name' => $studentData['father_name'],
-                'father_name_arabic' => $studentData['father_name_arabic'],
-                'date_of_birth' => $studentData['date_of_birth'],
-                'address' => $studentData['address'],
-                'gender' => $application->gender,
-                'roll_number' => $this->generateUniqueRollNumber(),
-                'registration_number' => $this->generateUniqueRegistrationNumber(),
-            ]);
+            return response()->json(['message' => 'Payment status updated successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to update payment status', 'error' => $e->getMessage()], 500);
         }
     }
 
-    private function generateUniqueRollNumber()
+    private function generateRegistrationNumber()
     {
-        do {
-            $rollNumber = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
-        } while (Student::where('roll_number', $rollNumber)->exists());
-
-        return $rollNumber;
+        return str_pad(mt_rand(1, 99999999), 8, '0', STR_PAD_LEFT);
     }
 
-    private function generateUniqueRegistrationNumber()
-    {
-        do {
-            $registrationNumber = str_pad(mt_rand(1, 999999999), 9, '0', STR_PAD_LEFT);
-        } while (Student::where('registration_number', $registrationNumber)->exists());
-
-        return $registrationNumber;
-    }
 }

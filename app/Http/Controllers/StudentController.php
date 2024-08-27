@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 
 class StudentController extends Controller
 {
-    // স্টুডেন্টের তালিকা দেখানোর API
     public function index()
     {
         $students = Student::with([
@@ -22,7 +21,6 @@ class StudentController extends Controller
         return response()->json($students);
     }
 
-    // নির্দিষ্ট একটি স্টুডেন্টের তথ্য দেখানোর API
     public function show($id)
     {
         $student = Student::with([
@@ -37,7 +35,6 @@ class StudentController extends Controller
         return response()->json($student);
     }
 
-    // নতুন স্টুডেন্ট যুক্ত করার API
     public function store(Request $request)
     {
         $request->validate([
@@ -68,7 +65,6 @@ class StudentController extends Controller
         }
     }
 
-    // স্টুডেন্টের তথ্য আপডেট করার API
     public function update(Request $request, $id)
     {
         $student = Student::findOrFail($id);
@@ -94,7 +90,6 @@ class StudentController extends Controller
         }
     }
 
-    // স্টুডেন্ট মুছে ফেলার API
     public function destroy($id)
     {
         $student = Student::findOrFail($id);

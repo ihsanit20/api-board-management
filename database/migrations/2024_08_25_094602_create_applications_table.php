@@ -21,15 +21,15 @@ class CreateApplicationsTable extends Migration
             $table->foreignId('institute_id')->constrained();
             $table->foreignId('group_id')->nullable()->constrained();
             $table->foreignId('area_id')->constrained();
-            $table->foreignId('center_id')->nullable()->constrained();
+            $table->foreignId('center_id')->nullable()->constrained('institutes');
             
             $table->enum('gender', ['male', 'female']);
-            $table->enum('status', ['Pending', 'Approved', 'Rejected'])->default('Pending');
             $table->enum('payment_status', ['Pending', 'Paid', 'Failed'])->default('Pending');
             $table->enum('payment_method', ['Online', 'Offline'])->nullable();
             
             $table->unsignedInteger('total_amount');
             $table->foreignId('submitted_by')->constrained('users');
+
             $table->foreignId('approved_by')->nullable()->constrained('users');
             
             $table->json('students');

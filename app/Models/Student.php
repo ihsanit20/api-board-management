@@ -39,8 +39,8 @@ class Student extends Model
         return $this->belongsTo(Area::class);
     }
 
-    public function center(): BelongsTo
+    public function center()
     {
-        return $this->belongsTo(Center::class);
+        return $this->belongsTo(Institute::class, 'center_id');
     }
 }

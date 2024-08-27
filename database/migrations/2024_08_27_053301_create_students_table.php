@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreignId('zamat_id')->constrained()->onDelete('restrict');
             $table->foreignId('group_id')->nullable()->constrained()->onDelete('set null');
             $table->foreignId('area_id')->nullable()->constrained()->onDelete('set null');
-            $table->foreignId('center_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('center_id')->nullable()->constrained('institutes')->onDelete('set null');
             $table->string('name');
             $table->string('name_arabic')->nullable();
             $table->string('father_name');
@@ -27,8 +27,7 @@ return new class extends Migration
             $table->date('date_of_birth');
             $table->string('address')->nullable();
             $table->string('gender');
-            $table->string('roll_number', 5)->unique();
-            $table->string('registration_number', 9)->unique();
+            $table->string('registration_number', 8)->unique();
             $table->timestamps();
         });
     }
