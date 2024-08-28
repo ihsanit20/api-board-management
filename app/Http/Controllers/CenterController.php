@@ -12,7 +12,7 @@ class CenterController extends Controller
      */
     public function index(Request $request)
     {
-        // Retrieve all centers
+        // Retrieve all centers with related models
         $query = Center::query()
             ->with([
                 'institute',
@@ -20,15 +20,15 @@ class CenterController extends Controller
                 'group',
             ]);
 
-        if($request->zamat_id) {
+        if ($request->zamat_id) {
             $query->where('zamat_id', $request->zamat_id);
         }
 
-        if($request->group_id) {
+        if ($request->group_id) {
             $query->where('group_id', $request->group_id);
         }
 
-        if($request->gender) {
+        if ($request->gender) {
             $query->where('gender', $request->gender);
         }
 
@@ -44,9 +44,10 @@ class CenterController extends Controller
     {
         // Validate the request
         $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'is_active' => 'boolean',
-            'department_id' => 'required|exists:departments,id',
+            'institute_id' => 'required|exists:institutes,id',
+            'zamat_id' => 'required|exists:zamats,id',
+            'group_id' => 'nullable|exists:groups,id',
+            'gender' => 'nullable|in:male,female',
         ]);
 
         // Create a new center
@@ -61,7 +62,7 @@ class CenterController extends Controller
     public function show(string $id)
     {
         // Find the center by ID
-        $center = Center::findOrFail($id);
+        $center = Center::with(['institute', 'zamat', 'group'])->findOrFail($id);
 
         return response()->json($center);
     }
@@ -73,9 +74,10 @@ class CenterController extends Controller
     {
         // Validate the request
         $validatedData = $request->validate([
-            'name' => 'string|max:255',
-            'is_active' => 'boolean',
-            'department_id' => 'required|exists:departments,id',
+            'institute_id' => 'required|exists:institutes,id',
+            'zamat_id' => 'required|exists:zamats,id',
+            'group_id' => 'nullable|exists:groups,id',
+            'gender' => 'nullable|in:male,female',
         ]);
 
         // Find the center by ID and update it
