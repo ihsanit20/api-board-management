@@ -66,6 +66,9 @@ Route::get('/students/{id}', [StudentController::class, 'show']);
 Route::get('/notices', [NoticeController::class, 'index']); 
 Route::get('/notices/{id}', [NoticeController::class, 'show']);
 
+Route::post('/applications', [ApplicationController::class, 'store']);
+Route::get('/applications/public-show', [ApplicationController::class, 'publicShow']);
+
 // Site Settings API routes
 Route::prefix('site-settings')->group(function () {
     Route::get('/scrolling-notice', [SiteSettingsController::class, 'showScrollingNotice']);
@@ -112,8 +115,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/centers/{id}', [CenterController::class, 'destroy']);
 
     Route::get('/applications', [ApplicationController::class, 'index']);    
-    Route::post('/applications', [ApplicationController::class, 'store']);
-    Route::get('/applications/{id}', [ApplicationController::class, 'show']);
+    Route::get('/applications/{id}', [ApplicationController::class, 'show']);        
     Route::put('/applications/{id}', [ApplicationController::class, 'update']);
     Route::delete('/applications/{id}', [ApplicationController::class, 'destroy']);
     Route::put('/applications/{id}/update-payment-status', [ApplicationController::class, 'updatePaymentStatus']);

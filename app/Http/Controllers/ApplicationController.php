@@ -45,6 +45,36 @@ class ApplicationController extends Controller
         return response()->json($application);
     }
 
+    public function publicShow(Request $request)
+    {
+        $request->validate([
+            'application_id' => 'required|exists:applications,id',
+            'institute_id' => 'required|exists:institutes,id',
+        ]);
+
+        $application = Application::query()
+            ->where('id', $request->application_id)
+            ->where('institute_id', $request->institute_id)
+            ->with([
+                'exam:id,name',
+                'zamat:id,name',
+                'area:id,name',
+                'institute:id,name',
+                'center',
+                'submittedBy',
+                'approvedBy',
+                'group:id,name'
+            ])
+            ->first();
+
+        if (!$application) {
+            return response()->json(['message' => 'Application not found or does not belong to the provided institute.'], 404);
+        }
+
+        return response()->json($application);
+    }
+
+
     public function store(Request $request)
     {
         $request->validate([
