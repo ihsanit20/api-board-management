@@ -116,7 +116,10 @@ class ApplicationController extends Controller
                 'students' => $request->students,
             ]);
 
-            return response()->json(['message' => 'Application submitted successfully', 'application' => $application], 201);
+            return response()->json([
+                'message' => 'Application submitted successfully', 
+                'application' => $application
+            ], 201);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to submit application', 'error' => $e->getMessage()], 500);
         }

@@ -28,7 +28,7 @@ class CreateApplicationsTable extends Migration
             $table->enum('payment_method', ['Online', 'Offline'])->nullable();
             
             $table->unsignedInteger('total_amount');
-            $table->foreignId('submitted_by')->constrained('users');
+            $table->foreignId('submitted_by')->nullable()->constrained('users');
 
             $table->foreignId('approved_by')->nullable()->constrained('users');
             
