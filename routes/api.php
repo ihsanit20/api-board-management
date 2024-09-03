@@ -68,6 +68,8 @@ Route::get('/notices/{id}', [NoticeController::class, 'show']);
 
 Route::post('/applications', [ApplicationController::class, 'store']);
 Route::get('/applications/public-show', [ApplicationController::class, 'publicShow']);
+Route::post('/applications/{application}/bkash-create-payment', [ApplicationController::class, 'bkashCreatePayment']);
+Route::post('/applications/{application}/bkash-execute-payment', [ApplicationController::class, 'bkashExecutePayment']);
 
 // Site Settings API routes
 Route::prefix('site-settings')->group(function () {

@@ -6,9 +6,14 @@ use App\Models\Application;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Msilabs\Bkash\BkashPayment;
 
 class ApplicationController extends Controller
 {
+    use BkashPayment;
+
+    private static $application = null;
+
     public function index()
     {
         $applications = Application::query()
@@ -74,7 +79,6 @@ class ApplicationController extends Controller
         return response()->json($application);
     }
 
-
     public function store(Request $request)
     {
         $request->validate([
@@ -116,12 +120,85 @@ class ApplicationController extends Controller
                 'students' => $request->students,
             ]);
 
+            // Check if the payment method is online and initiate payment
+            // if ($request->payment_method === 'Online') {
+            //     // Initiate payment and get the redirect URL
+            //     $bkashURL = $this->initiateOnlinePayment($application);
+
+            //     return response()->json([
+            //         'message'   => 'Application submitted successfully. Redirecting to payment gateway...',
+            //         'bkashURL'  => $bkashURL
+            //     ], 201);
+            // }
+
             return response()->json([
                 'message' => 'Application submitted successfully', 
                 'application' => $application
             ], 201);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to submit application', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function bkashCreatePayment(Application $application)
+    {
+        $response = $this->initiateOnlinePayment($application);
+
+        return response()->json([
+            'message'   => 'Application submitted successfully. Redirecting to payment gateway...',
+            'response'  => $response,
+            'success'   => !!($response->bkashURL ?? false),
+            'bkashURL'  => $response->bkashURL ?? '#'
+        ], 201);
+    }
+
+    private function initiateOnlinePayment($application)
+    {
+        $callback_url = env('FRONTEND_BASE_URL', 'https://tanjim.madrasah.cc/') . "/bkash/callback/{$application->id}/{$application->institute_id}";
+
+        try {
+            $response = $this->createPayment($application->total_amount, $application->id, $callback_url);
+            
+            return $response;
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to initiate payment', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function bkashExecutePayment(Application $application, Request $request)
+    {
+        $paymentID = $request->input('paymentID');
+
+        if($paymentID) {
+            $response = $this->executePayment($paymentID);
+
+            // return $response;
+      
+            if($response->transactionStatus == 'Completed') {
+
+                // store payment data
+
+                $request->merge(['payment_status' => 'Paid']);
+
+                self::$application = $application;
+           
+                $this->updatePaymentStatus($request, $application->id); // how to call this
+
+                return response()->json([
+                    'message' => 'Payment success',
+                    'status' => (boolean) (true),
+                ], 201);
+            } else {
+                return response()->json([
+                    'message' => 'Payment failed! Try Again!',
+                    'status' => (boolean) (false),
+                ], 200);
+            }
+        } else {
+            return response()->json([
+                'message' => 'Payment failed! Try Again',
+                'status' => (boolean) (false),
+            ], 200);
         }
     }
 
@@ -132,7 +209,7 @@ class ApplicationController extends Controller
         ]);
 
         try {
-            $application = Application::findOrFail($id);
+            $application = self::$application ?? Application::findOrFail($id);
             $application->update(['payment_status' => $request->payment_status]);
 
             if ($request->payment_status === 'Paid') {
@@ -167,5 +244,4 @@ class ApplicationController extends Controller
     {
         return str_pad(mt_rand(1, 99999999), 8, '0', STR_PAD_LEFT);
     }
-
 }

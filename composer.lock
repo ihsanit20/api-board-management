@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9c491b8531eec05ba41a11d9276a5749",
+    "content-hash": "3a86bc2a75773200f4add0085679c622",
     "packages": [
         {
             "name": "brick/math",
@@ -1984,6 +1984,61 @@
                 }
             ],
             "time": "2024-06-28T09:40:51+00:00"
+        },
+        {
+            "name": "msilabs/bkash",
+            "version": "v2.0.5",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/msilabs/bkash.git",
+                "reference": "702f440caaa4c814f788dac9691fc7081a59535d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/msilabs/bkash/zipball/702f440caaa4c814f788dac9691fc7081a59535d",
+                "reference": "702f440caaa4c814f788dac9691fc7081a59535d",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/support": "^6|^7|^8|^9|^10",
+                "php": "^7.4|^8.0|^8.1|^8.2"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Msilabs\\Bkash\\BkashServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Msilabs\\Bkash\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "msisaif",
+                    "email": "msi313.bd@gmail.com"
+                }
+            ],
+            "description": "bKash Payment Gateway API for Laravel Framework.",
+            "homepage": "https://github.com/msilabs/bkash",
+            "keywords": [
+                "bkash",
+                "bkash laravel",
+                "laravel-package",
+                "payment gateway"
+            ],
+            "support": {
+                "issues": "https://github.com/msilabs/bkash/issues",
+                "source": "https://github.com/msilabs/bkash"
+            },
+            "time": "2024-09-01T12:02:15+00:00"
         },
         {
             "name": "nesbot/carbon",
