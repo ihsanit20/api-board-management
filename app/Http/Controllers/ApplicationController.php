@@ -143,7 +143,7 @@ class ApplicationController extends Controller
 
     private function initiateOnlinePayment($application)
     {
-        $callback_url = env('FRONTEND_BASE_URL', 'https://tanjim.madrasah.cc/') . "/bkash/callback/{$application->id}/{$application->institute_id}";
+        $callback_url = env('FRONTEND_BASE_URL', 'https://tanjim.madrasah.cc') . "/bkash/callback/{$application->id}/{$application->institute_id}";
 
         try {
             $response = $this->createPayment($application->total_amount, $application->id, $callback_url);
