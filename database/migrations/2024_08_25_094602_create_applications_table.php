@@ -25,7 +25,7 @@ class CreateApplicationsTable extends Migration
             
             $table->enum('gender', ['male', 'female']);
             $table->enum('payment_status', ['Pending', 'Paid', 'Failed'])->default('Pending');
-            $table->enum('payment_method', ['Online', 'Offline'])->nullable();
+            $table->enum('payment_method', ['Online', 'Offline'])->default('Offline');
             
             $table->unsignedInteger('total_amount');
             $table->foreignId('submitted_by')->nullable()->constrained('users');

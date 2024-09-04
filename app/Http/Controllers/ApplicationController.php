@@ -101,7 +101,7 @@ class ApplicationController extends Controller
             'students.*.address' => 'nullable|string|max:255',
 
             'total_amount' => 'required|numeric|min:0',
-            'payment_method' => 'required|string|in:Online,Offline',
+            'payment_method' => 'nullable|string|in:Online,Offline',
         ]);
 
         try {
@@ -115,21 +115,10 @@ class ApplicationController extends Controller
                 'gender' => $request->gender,
                 'payment_status' => 'Pending',
                 'total_amount' => $request->total_amount,
-                'payment_method' => $request->payment_method,
+                'payment_method' => $request->payment_method ?? 'Offline',
                 'submitted_by' => Auth::id(),
                 'students' => $request->students,
             ]);
-
-            // Check if the payment method is online and initiate payment
-            // if ($request->payment_method === 'Online') {
-            //     // Initiate payment and get the redirect URL
-            //     $bkashURL = $this->initiateOnlinePayment($application);
-
-            //     return response()->json([
-            //         'message'   => 'Application submitted successfully. Redirecting to payment gateway...',
-            //         'bkashURL'  => $bkashURL
-            //     ], 201);
-            // }
 
             return response()->json([
                 'message' => 'Application submitted successfully', 
@@ -177,6 +166,7 @@ class ApplicationController extends Controller
             if($response->transactionStatus == 'Completed') {
 
                 // store payment data
+                $application->update(['payment_method' => 'Online']); 
 
                 $request->merge(['payment_status' => 'Paid']);
 
