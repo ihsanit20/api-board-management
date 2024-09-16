@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Area;
 use App\Models\Institute;
 use Illuminate\Http\Request;
 
@@ -12,25 +13,30 @@ class InstituteController extends Controller
      */
     public function index(Request $request)
     {
-        // Check if area_id is provided in the request
-        $areaId = $request->input('area_id');
-        $is_center = $request->input('is_center');
-    
-        // Retrieve institutes, filtering by area_id if provided
         $query = Institute::with('area');
     
-        if ($areaId) {
-            $query->where('area_id', $areaId);
+        if ($request->has('area_id')) {
+            $query->where('area_id', $request->input('area_id'));
         }
-
-        if ($is_center) {
+    
+        if ($request->has('is_center')) {
             $query->where('is_center', 1);
         }
     
-        $institutes = $query->get();
+        $perPage = $request->input('per_page', 15); // Default per page is 15
     
-        return response()->json($institutes);
+        // If 'all' is requested, return the full list
+        return $perPage === 'all' 
+            ? response()->json([
+                'data' => $query->get(),
+                'total' => $query->count(),
+                'per_page' => $query->count(),
+                'current_page' => 1,
+                'last_page' => 1,
+            ])
+            : response()->json($query->paginate($perPage));
     }
+    
 
     /**
      * Store a newly created resource in storage.
@@ -46,8 +52,23 @@ class InstituteController extends Controller
             'is_center' => 'boolean',
         ]);
 
-        // Create a new institute
-        $institute = Institute::create($validatedData);
+        // Find the area based on area_id
+        $area = Area::findOrFail($request->area_id);
+
+        // Calculate the new institute serial and institute code
+        $maxInstituteCode = Institute::where('area_id', $area->id)->max('institute_code');
+        $newInstituteSerial = $maxInstituteCode ? (int)substr($maxInstituteCode, -3) + 1 : 1;
+        $newInstituteCode = $area->area_code . str_pad($newInstituteSerial, 3, '0', STR_PAD_LEFT);
+
+        // Create a new institute using validated data
+        $institute = Institute::create([
+            'name' => $validatedData['name'],
+            'phone' => $validatedData['phone'],
+            'area_id' => $validatedData['area_id'],
+            'institute_code' => $newInstituteCode,
+            'is_active' => $validatedData['is_active'] ?? 0,
+            'is_center' => $validatedData['is_center'] ?? 0,
+        ]);
 
         return response()->json($institute, 201);
     }
@@ -89,6 +110,7 @@ class InstituteController extends Controller
      */
     public function destroy($id)
     {
+        // Find the institute by ID and delete it
         $institute = Institute::findOrFail($id);
         $institute->delete();
 

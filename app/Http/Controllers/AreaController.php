@@ -27,7 +27,14 @@ class AreaController extends Controller
             'name' => 'required|string|max:255'
         ]);
 
-        // Create a new area
+        // Find the maximum area code, and auto-generate the next area code
+        $maxAreaCode = Area::max('area_code');
+        $newAreaCode = $maxAreaCode ? str_pad($maxAreaCode + 1, 2, '0', STR_PAD_LEFT) : '01';
+
+        // Merge the generated area code into the validated data
+        $validatedData['area_code'] = $newAreaCode;
+
+        // Create a new area with the generated area code
         $area = Area::create($validatedData);
 
         return response()->json($area, 201);

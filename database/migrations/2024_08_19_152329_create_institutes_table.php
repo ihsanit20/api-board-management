@@ -17,11 +17,10 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->unsignedBigInteger('area_id');
             $table->foreign('area_id')->references('id')->on('areas')->onDelete('restrict');
+            $table->string('institute_code', 5)->unique();
             $table->boolean('is_active')->default(1);
             $table->boolean('is_center')->default(0);
             $table->timestamps();
-
-            $table->unique(['name', 'phone']);
         });
     }
 
