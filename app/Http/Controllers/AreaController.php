@@ -12,8 +12,10 @@ class AreaController extends Controller
      */
     public function index()
     {
-        // Retrieve all areas
-        $areas = Area::all();
+        $areas = Area::query()
+            ->oldest('area_code')
+            ->get();
+
         return response()->json($areas);
     }
 
