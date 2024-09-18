@@ -16,7 +16,10 @@ class GroupController extends Controller
         $zamatId = $request->input('zamat_id');
     
         // Retrieve groups, filtering by zamat_id if provided
-        $query = Group::with('zamat');
+        $query = Group::with([
+            'zamat:id,name',
+            'areas:id,name,area_code',
+        ]);
     
         if ($zamatId) {
             $query->where('zamat_id', $zamatId);

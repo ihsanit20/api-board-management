@@ -17,4 +17,9 @@ class Group extends Model
     {
         return $this->belongsTo(Zamat::class);
     }
+
+    public function areas()
+    {
+        return $this->belongsToMany(Area::class);
+    }
 }
