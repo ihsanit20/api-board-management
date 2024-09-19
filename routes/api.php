@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CenterController;
 use App\Http\Controllers\DepartmentController; 
 use App\Http\Controllers\ExamController;
+use App\Http\Controllers\ExaminerController;
 use App\Http\Controllers\FeeController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\InstituteController;
@@ -65,6 +66,9 @@ Route::get('/students/{id}', [StudentController::class, 'show']);
 
 Route::get('/notices', [NoticeController::class, 'index']); 
 Route::get('/notices/{id}', [NoticeController::class, 'show']);
+
+Route::get('/examiners', [ExaminerController::class, 'index']);
+Route::get('/examiners/{id}', [ExaminerController::class, 'show']);
 
 Route::post('/applications', [ApplicationController::class, 'store']);
 Route::get('/applications/public-show', [ApplicationController::class, 'publicShow']);
@@ -129,4 +133,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/notices', [NoticeController::class, 'store']);
     Route::put('/notices/{id}', [NoticeController::class, 'update']); 
     Route::delete('/notices/{id}', [NoticeController::class, 'destroy']);
+
+    Route::post('/examiners', [ExaminerController::class, 'store']);
+    Route::put('/examiners/{id}', [ExaminerController::class, 'update']);
+    Route::delete('/examiners/{id}', [ExaminerController::class, 'destroy']);
+
 });

@@ -25,6 +25,8 @@ class ExamController extends Controller
             'name' => 'required|string|unique:exams,name',
             'reg_last_date' => 'required|date',
             'reg_final_date' => 'required|date|after_or_equal:reg_last_date',
+            'registration_fee' => 'required|numeric|min:0', // নিবন্ধন ফি ভ্যালিডেশন
+            'late_fee' => 'required|numeric|min:0', // বর্ধিত ফি ভ্যালিডেশন
         ]);
 
         $exam = Exam::create($request->all());
@@ -60,6 +62,8 @@ class ExamController extends Controller
             'name' => 'sometimes|required|string|unique:exams,name,' . $exam->id,
             'reg_last_date' => 'sometimes|required|date',
             'reg_final_date' => 'sometimes|required|date|after_or_equal:reg_last_date',
+            'registration_fee' => 'sometimes|required|numeric|min:0', // নিবন্ধন ফি আপডেটের ভ্যালিডেশন
+            'late_fee' => 'sometimes|required|numeric|min:0', // বর্ধিত ফি আপডেটের ভ্যালিডেশন
         ]);
 
         $exam->update($request->all());
