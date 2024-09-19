@@ -16,8 +16,8 @@ return new class extends Migration
             $table->string('name')->unique();
             $table->date('reg_last_date');
             $table->date('reg_final_date');
-            $table->decimal('registration_fee', 8);
-            $table->decimal('late_fee', 8);
+            $table->unsignedSmallInteger('registration_fee');
+            $table->unsignedSmallInteger('late_fee');
             $table->timestamps();
         });
     }

@@ -20,7 +20,7 @@ class InstituteController extends Controller
         }
     
         if ($request->has('is_center')) {
-            $query->where('is_center', 1);
+            $query->where('is_center', $request->input('is_center'));
         }
     
         $perPage = $request->input('per_page', 15); // Default per page is 15
@@ -80,6 +80,18 @@ class InstituteController extends Controller
     {
         // Find the institute by ID
         $institute = Institute::findOrFail($id);
+
+        return response()->json($institute);
+    }
+
+    public function instituteByCode(string $institute_code)
+    {
+        $institute = Institute::query()
+            ->with([
+                'area:id,name,area_code',
+            ])
+            ->where('institute_code', $institute_code)
+            ->firstOrFail();
 
         return response()->json($institute);
     }

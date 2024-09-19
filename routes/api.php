@@ -40,6 +40,7 @@ Route::get('/departments/{id}', [DepartmentController::class, 'show']);
 
 Route::get('/institutes', [InstituteController::class, 'index']);
 Route::get('/institutes/{id}', [InstituteController::class, 'show']);
+Route::get('/institute-by-code/{institute_code}', [InstituteController::class, 'instituteByCode']);
 
 Route::get('/zamats', [ZamatController::class, 'index']);
 Route::get('/zamats/{id}', [ZamatController::class, 'show']);
