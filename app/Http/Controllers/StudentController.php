@@ -13,7 +13,7 @@ class StudentController extends Controller
             'exam:id,name',
             'zamat:id,name',
             'area:id,name',
-            'institute:id,name',
+            'institute:id,name,institute_code',
             'center',
             'group:id,name'
         ])->get();
@@ -27,7 +27,7 @@ class StudentController extends Controller
             'exam:id,name',
             'zamat:id,name',
             'area:id,name',
-            'institute:id,name',
+            'institute:id,name,institute_code',
             'center',
             'group:id,name'
         ])->findOrFail($id);

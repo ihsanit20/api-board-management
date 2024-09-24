@@ -21,12 +21,17 @@ class ApplicationController extends Controller
                 'exam:id,name',
                 'zamat:id,name',
                 'area:id,name',
-                'institute:id,name',
+                'institute:id,name,institute_code',
                 'center',
                 'submittedBy',
                 'approvedBy',
                 'group:id,name'
             ])
+            ->when(request()->institute_code, function ($query, $institute_code) {
+                $query->whereHas('institute', function ($query) use ($institute_code) {
+                    $query->where('institute_code', $institute_code);
+                });
+            })
             ->get();
 
         return response()->json($applications);
@@ -39,7 +44,7 @@ class ApplicationController extends Controller
                 'exam:id,name',
                 'zamat:id,name',
                 'area:id,name',
-                'institute:id,name',
+                'institute:id,name,institute_code',
                 'center',
                 'submittedBy',
                 'approvedBy',

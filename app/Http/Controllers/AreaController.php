@@ -13,6 +13,7 @@ class AreaController extends Controller
     public function index()
     {
         $areas = Area::query()
+            ->withCount('institutes')
             ->oldest('area_code')
             ->get();
 
