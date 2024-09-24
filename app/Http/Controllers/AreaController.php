@@ -32,7 +32,8 @@ class AreaController extends Controller
 
         // Find the maximum area code, and auto-generate the next area code
         $maxAreaCode = Area::max('area_code');
-        $newAreaCode = $maxAreaCode ? str_pad($maxAreaCode + 1, 2, '0', STR_PAD_LEFT) : '01';
+
+        $newAreaCode = $maxAreaCode ? $maxAreaCode + 1 : 1;
 
         // Merge the generated area code into the validated data
         $validatedData['area_code'] = $newAreaCode;

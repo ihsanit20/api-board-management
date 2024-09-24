@@ -43,18 +43,47 @@ class CenterController extends Controller
     public function store(Request $request)
     {
         // Validate the request
-        $validatedData = $request->validate([
-            'institute_id' => 'required|exists:institutes,id',
+        $request->validate([
+            'institute_ids' => 'array|required',
             'zamat_id' => 'required|exists:zamats,id',
             'group_id' => 'nullable|exists:groups,id',
-            'gender' => 'nullable|in:male,female',
         ]);
 
-        // Create a new center
-        $center = Center::create($validatedData);
+        $institute_ids = array_unique($request->institute_ids); // Unique institute IDs
 
-        return response()->json($center, 201);
+        // Fetch previously stored institute IDs for the given zamat and group
+        $previous_institute_ids = Center::query()
+            ->where([
+                'zamat_id' => $request->zamat_id,
+                'group_id' => $request->group_id,
+            ])
+            ->pluck('institute_id')
+            ->toArray();
+
+        // Filter out institute IDs that already exist
+        $new_institute_ids = array_diff($institute_ids, $previous_institute_ids);
+
+        // Prepare data for bulk insert
+        $centers_data = [];
+        foreach ($new_institute_ids as $institute_id) {
+            $centers_data[] = [
+                'zamat_id' => $request->zamat_id,
+                'group_id' => $request->group_id,
+                'institute_id' => $institute_id,
+                'created_at' => now(), // Make sure to add timestamps if your model uses them
+                'updated_at' => now(),
+            ];
+        }
+
+        // Bulk insert new centers
+        if (!empty($centers_data)) {
+            Center::insert($centers_data); // Bulk insert
+            return response()->json(['message' => 'Centers created successfully.'], 201);
+        }
+
+        return response()->json(['message' => 'No new centers created.'], 200);
     }
+
 
     /**
      * Display the specified resource.

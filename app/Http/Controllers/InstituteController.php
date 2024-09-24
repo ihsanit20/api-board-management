@@ -13,7 +13,9 @@ class InstituteController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Institute::with('area');
+        $query = Institute::query()
+            ->with('area')
+            ->oldest('institute_code');
     
         if ($request->has('area_id')) {
             $query->where('area_id', $request->input('area_id'));
@@ -57,7 +59,9 @@ class InstituteController extends Controller
 
         // Calculate the new institute serial and institute code
         $maxInstituteCode = Institute::where('area_id', $area->id)->max('institute_code');
+
         $newInstituteSerial = $maxInstituteCode ? (int)substr($maxInstituteCode, -3) + 1 : 1;
+
         $newInstituteCode = $area->area_code . str_pad($newInstituteSerial, 3, '0', STR_PAD_LEFT);
 
         // Create a new institute using validated data
@@ -104,7 +108,7 @@ class InstituteController extends Controller
         // Validate the request
         $validatedData = $request->validate([
             'name' => 'string|max:255',
-            'phone' => 'string|max:255',
+            'phone' => 'max:255',
             'area_id' => 'exists:areas,id',
             'is_active' => 'boolean',
             'is_center' => 'boolean',

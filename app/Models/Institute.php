@@ -12,6 +12,7 @@ class Institute extends Model
     protected $fillable = ['name', 'phone', 'area_id', 'institute_code', 'is_active', 'is_center'];
 
     protected $casts = [
+        'is_active' => 'boolean',
         'is_center' => 'boolean',
     ];
 
