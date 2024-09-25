@@ -89,7 +89,7 @@ class ApplicationController extends Controller
             'area_id' => 'nullable|exists:areas,id',
             'center_id' => 'nullable|exists:institutes,id',
             
-            'gender' => 'required|in:male,female',
+            'gender' => 'nullable|in:male,female',
 
             'students' => 'required|array|min:1',
 
@@ -98,6 +98,7 @@ class ApplicationController extends Controller
             'students.*.father_name' => 'required|string|max:255',
             'students.*.father_name_arabic' => 'nullable|string|max:255',
             'students.*.date_of_birth' => 'required|date|before:today',
+            'students.*.para' => 'nullable|string|max:255',
             'students.*.address' => 'nullable|string|max:255',
 
             'total_amount' => 'required|numeric|min:0',
@@ -217,6 +218,7 @@ class ApplicationController extends Controller
                         'father_name' => $studentData['father_name'],
                         'father_name_arabic' => $studentData['father_name_arabic'],
                         'date_of_birth' => $studentData['date_of_birth'],
+                        'para' => $studentData['para'],
                         'address' => $studentData['address'],
                         'gender' => $application->gender,
                         'registration_number' => $this->generateRegistrationNumber(),
