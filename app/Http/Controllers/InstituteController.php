@@ -25,6 +25,10 @@ class InstituteController extends Controller
             $query->where('is_center', $request->input('is_center'));
         }
     
+        if ($request->has('is_active')) {
+            $query->where('is_active', $request->input('is_active'));
+        }
+    
         $perPage = $request->input('per_page', 15); // Default per page is 15
     
         // If 'all' is requested, return the full list
