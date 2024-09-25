@@ -25,6 +25,7 @@ return new class extends Migration
             $table->string('father_name');
             $table->string('father_name_arabic')->nullable();
             $table->date('date_of_birth');
+            $table->string('para')->nullable();
             $table->string('address')->nullable();
             $table->string('gender');
             $table->string('registration_number', 8)->unique();

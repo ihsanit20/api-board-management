@@ -21,17 +21,12 @@ class ApplicationController extends Controller
                 'exam:id,name',
                 'zamat:id,name',
                 'area:id,name',
-                'institute:id,name,institute_code',
+                'institute:id,name',
                 'center',
                 'submittedBy',
                 'approvedBy',
                 'group:id,name'
             ])
-            ->when(request()->institute_code, function ($query, $institute_code) {
-                $query->whereHas('institute', function ($query) use ($institute_code) {
-                    $query->where('institute_code', $institute_code);
-                });
-            })
             ->get();
 
         return response()->json($applications);
@@ -44,7 +39,7 @@ class ApplicationController extends Controller
                 'exam:id,name',
                 'zamat:id,name',
                 'area:id,name',
-                'institute:id,name,institute_code',
+                'institute:id,name',
                 'center',
                 'submittedBy',
                 'approvedBy',
@@ -58,20 +53,18 @@ class ApplicationController extends Controller
     public function publicShow(Request $request)
     {
         $request->validate([
-            'application_id' => 'required',
-            'institute_code' => 'required',
+            'application_id' => 'required|exists:applications,id',
+            'institute_id' => 'required|exists:institutes,id',
         ]);
 
         $application = Application::query()
             ->where('id', $request->application_id)
-            ->whereHas('institute', function ($query) use ($request) {
-                $query->where('institute_code', $request->institute_code);
-            })
+            ->where('institute_id', $request->institute_id)
             ->with([
                 'exam:id,name',
                 'zamat:id,name',
-                'area:id,name,area_code',
-                'institute:id,name,institute_code',
+                'area:id,name',
+                'institute:id,name',
                 'center',
                 'submittedBy',
                 'approvedBy',
@@ -96,7 +89,7 @@ class ApplicationController extends Controller
             'area_id' => 'nullable|exists:areas,id',
             'center_id' => 'nullable|exists:institutes,id',
             
-            // 'gender' => 'required|in:male,female',
+            'gender' => 'nullable|in:male,female',
 
             'students' => 'required|array|min:1',
 
@@ -105,6 +98,7 @@ class ApplicationController extends Controller
             'students.*.father_name' => 'required|string|max:255',
             'students.*.father_name_arabic' => 'nullable|string|max:255',
             'students.*.date_of_birth' => 'required|date|before:today',
+            'students.*.para' => 'nullable|string|max:255',
             'students.*.address' => 'nullable|string|max:255',
 
             'total_amount' => 'required|numeric|min:0',
@@ -119,7 +113,7 @@ class ApplicationController extends Controller
                 'zamat_id' => $request->zamat_id,
                 'group_id' => $request->group_id,
                 'center_id' => $request->center_id,
-                // 'gender' => $request->gender,
+                'gender' => $request->gender,
                 'payment_status' => 'Pending',
                 'total_amount' => $request->total_amount,
                 'payment_method' => $request->payment_method ?? 'Offline',
@@ -207,13 +201,9 @@ class ApplicationController extends Controller
 
         try {
             $application = self::$application ?? Application::findOrFail($id);
+            $application->update(['payment_status' => $request->payment_status]);
 
-            if ($request->payment_status === 'Paid' && !Student::where('application_id', $application->id)->exists()) {
-                $registration_numbers = Student::query()
-                    ->where('exam_id', $application->exam_id)
-                    ->pluck('registration_number')
-                    ->toArray();
-
+            if ($request->payment_status === 'Paid') {
                 foreach ($application->students as $studentData) {
                     Student::create([
                         'application_id' => $application->id,
@@ -228,14 +218,13 @@ class ApplicationController extends Controller
                         'father_name' => $studentData['father_name'],
                         'father_name_arabic' => $studentData['father_name_arabic'],
                         'date_of_birth' => $studentData['date_of_birth'],
+                        'para' => $studentData['para'],
                         'address' => $studentData['address'],
-                        // 'gender' => $application->gender,
-                        'registration_number' => $this->generateRegistrationNumber($application->exam_id, $registration_numbers),
+                        'gender' => $application->gender,
+                        'registration_number' => $this->generateRegistrationNumber(),
                     ]);
                 }
             }
-
-            $application->update(['payment_status' => $request->payment_status]);
 
             return response()->json(['message' => 'Payment status updated successfully']);
         } catch (\Exception $e) {
@@ -243,16 +232,8 @@ class ApplicationController extends Controller
         }
     }
 
-    private function generateRegistrationNumber($exam_id, &$previous_registration_numbers)
+    private function generateRegistrationNumber()
     {
-        do {
-            $rand = rand(100000, 999999); // Random number
-            $new_registration_number = $exam_id . $rand;
-        } while (in_array($new_registration_number, $previous_registration_numbers));
-    
-        // Push the new registration number into the array
-        $previous_registration_numbers[] = $new_registration_number;
-    
-        return $new_registration_number;
-    }    
+        return str_pad(mt_rand(1, 99999999), 8, '0', STR_PAD_LEFT);
+    }
 }
