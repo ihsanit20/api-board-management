@@ -14,9 +14,9 @@ class ApplicationController extends Controller
 
     private static $application = null;
 
-    public function index()
+    public function index(Request $request)
     {
-        $applications = Application::query()
+        $query = Application::query()
             ->with([
                 'exam:id,name',
                 'zamat:id,name',
@@ -26,12 +26,30 @@ class ApplicationController extends Controller
                 'submittedBy',
                 'approvedBy',
                 'group:id,name'
-            ])
-            ->get();
-
+            ]);
+    
+        // ফিল্টারিং প্যারামিটার চেক করা
+        if ($request->has('zamat_id') && $request->zamat_id) {
+            $query->where('zamat_id', $request->zamat_id);
+        }
+    
+        if ($request->has('institute_code') && $request->institute_code) {
+            $query->whereHas('institute', function ($q) use ($request) {
+                $q->where('institute_code', $request->institute_code);
+            });
+        }
+    
+        if ($request->has('application_id') && $request->application_id) {
+            $query->where('id', $request->application_id);
+        }
+    
+        // ফিল্টার করা ডেটা ফেচ করা
+        $applications = $query->get();
+    
+        // JSON রেসপন্স রিটার্ন করা
         return response()->json($applications);
     }
-
+    
     public function show($id)
     {
         $application = Application::query()
