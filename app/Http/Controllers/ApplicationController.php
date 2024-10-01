@@ -50,6 +50,29 @@ class ApplicationController extends Controller
         return response()->json($applications);
     }
     
+    public function getApplicationCounts(Request $request)
+    {
+        // সাধারণ ফিল্টারিং যদি প্রয়োজন হয় (উদাহরণস্বরূপ `zamat_id`, `institute_code`)
+        $query = Application::query();
+    
+        // মোট নিবন্ধনের সংখ্যা গণনা করা
+        $totalApplications = $query->count();
+    
+        // পেন্ডিং নিবন্ধনের সংখ্যা গণনা করা
+        $pendingApplications = (clone $query)->where('payment_status', 'Pending')->count();
+    
+        // পেইড নিবন্ধনের সংখ্যা গণনা করা
+        $paidApplications = (clone $query)->where('payment_status', 'Paid')->count();
+    
+        // JSON রেসপন্সে সংখ্যা ফেরত দেওয়া
+        return response()->json([
+            'totalApplications' => $totalApplications,
+            'pendingApplications' => $pendingApplications,
+            'paidApplications' => $paidApplications
+        ]);
+    }
+    
+
     public function show($id)
     {
         $application = Application::query()

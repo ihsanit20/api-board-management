@@ -121,7 +121,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/centers/{id}', [CenterController::class, 'update']); 
     Route::delete('/centers/{id}', [CenterController::class, 'destroy']);
 
-    Route::get('/applications', [ApplicationController::class, 'index']);    
+    Route::get('/applications', [ApplicationController::class, 'index']); 
+    Route::get('/application-counts', [ApplicationController::class, 'getApplicationCounts']);   
     Route::get('/applications/{id}', [ApplicationController::class, 'show']);        
     Route::put('/applications/{id}', [ApplicationController::class, 'update']);
     Route::delete('/applications/{id}', [ApplicationController::class, 'destroy']);
