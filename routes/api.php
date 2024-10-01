@@ -32,7 +32,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('/register', [AuthController::class, 'register']);
+
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/departments', [DepartmentController::class, 'index']);
@@ -85,6 +85,8 @@ Route::prefix('site-settings')->group(function () {
 
 // Protected routes (store, update, and destroy)
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+
     Route::put('/site-settings/scrolling-notice', [SiteSettingsController::class, 'updateScrollingNotice']);
     Route::put('/site-settings/director-message', [SiteSettingsController::class, 'updateDirectorMessage']);
     Route::put('/site-settings/about-us', [SiteSettingsController::class, 'updateAboutUs']);
