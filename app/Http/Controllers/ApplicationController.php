@@ -69,33 +69,36 @@ class ApplicationController extends Controller
     }
 
     public function publicShow(Request $request)
-    {
-        $request->validate([
-            'application_id' => 'required|exists:applications,id',
-            'institute_id' => 'required|exists:institutes,id',
-        ]);
+{
+    $request->validate([
+        'application_id' => 'required|exists:applications,id',
+        'institute_code' => 'required|exists:institutes,institute_code', // Validate using institute_code
+    ]);
 
-        $application = Application::query()
-            ->where('id', $request->application_id)
-            ->where('institute_id', $request->institute_id)
-            ->with([
-                'exam:id,name',
-                'zamat:id,name',
-                'area:id,name',
-                'institute:id,name',
-                'center',
-                'submittedBy',
-                'approvedBy',
-                'group:id,name'
-            ])
-            ->first();
+    $application = Application::query()
+        ->where('id', $request->application_id)
+        ->whereHas('institute', function ($query) use ($request) {
+            $query->where('institute_code', $request->institute_code); // Search by institute_code
+        })
+        ->with([
+            'exam:id,name',
+            'zamat:id,name',
+            'area:id,name',
+            'institute:id,name',
+            'center',
+            'submittedBy',
+            'approvedBy',
+            'group:id,name'
+        ])
+        ->first();
 
-        if (!$application) {
-            return response()->json(['message' => 'Application not found or does not belong to the provided institute.'], 404);
-        }
-
-        return response()->json($application);
+    if (!$application) {
+        return response()->json(['message' => 'Application not found or does not belong to the provided institute.'], 404);
     }
+
+    return response()->json($application);
+}
+
 
     public function store(Request $request)
     {
