@@ -28,10 +28,6 @@ class CenterController extends Controller
             $query->where('group_id', $request->group_id);
         }
 
-        if ($request->gender) {
-            $query->where('gender', $request->gender);
-        }
-
         $centers = $query->get();
 
         return response()->json($centers);
@@ -106,7 +102,6 @@ class CenterController extends Controller
             'institute_id' => 'required|exists:institutes,id',
             'zamat_id' => 'required|exists:zamats,id',
             'group_id' => 'nullable|exists:groups,id',
-            'gender' => 'nullable|in:male,female',
         ]);
 
         // Find the center by ID and update it

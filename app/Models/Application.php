@@ -13,6 +13,7 @@ class Application extends Model
 
     protected $casts = [
         'students' => 'array',
+        'application_date' => 'date:Y-m-d',
     ];
 
     public function exam()

@@ -27,7 +27,7 @@ return new class extends Migration
             $table->date('date_of_birth');
             $table->string('para')->nullable();
             $table->string('address')->nullable();
-            $table->string('gender');
+            $table->string('gender')->nullable();
             $table->string('registration_number', 8)->unique();
             $table->timestamps();
         });

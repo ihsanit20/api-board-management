@@ -23,7 +23,7 @@ class CreateApplicationsTable extends Migration
             $table->foreignId('area_id')->constrained();
             $table->foreignId('center_id')->nullable()->constrained('institutes');
             
-            $table->enum('gender', ['male', 'female']);
+            $table->enum('gender', ['male', 'female'])->nullable();
             $table->enum('payment_status', ['Pending', 'Paid', 'Failed'])->default('Pending');
             $table->enum('payment_method', ['Online', 'Offline'])->default('Offline');
             

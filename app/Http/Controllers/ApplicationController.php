@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
+use App\Models\Exam;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,8 +24,8 @@ class ApplicationController extends Controller
                 'area:id,name',
                 'institute:id,name,institute_code',
                 'center',
-                'submittedBy',
-                'approvedBy',
+                'submittedBy:id,name',
+                'approvedBy:id,name',
                 'group:id,name'
             ]);
     
@@ -44,7 +45,9 @@ class ApplicationController extends Controller
         }
     
         // ফিল্টার করা ডেটা ফেচ করা
-        $applications = $query->get();
+        $applications = $query
+            ->latest('id')
+            ->get();
     
         // JSON রেসপন্স রিটার্ন করা
         return response()->json($applications);
@@ -92,35 +95,35 @@ class ApplicationController extends Controller
     }
 
     public function publicShow(Request $request)
-{
-    $request->validate([
-        'application_id' => 'required|exists:applications,id',
-        'institute_code' => 'required|exists:institutes,institute_code', // Validate using institute_code
-    ]);
+    {
+        $request->validate([
+            'application_id' => 'required|exists:applications,id',
+            'institute_code' => 'required|exists:institutes,institute_code', // Validate using institute_code
+        ]);
 
-    $application = Application::query()
-        ->where('id', $request->application_id)
-        ->whereHas('institute', function ($query) use ($request) {
-            $query->where('institute_code', $request->institute_code); // Search by institute_code
-        })
-        ->with([
-            'exam:id,name',
-            'zamat:id,name',
-            'area:id,name',
-            'institute:id,name',
-            'center',
-            'submittedBy',
-            'approvedBy',
-            'group:id,name'
-        ])
-        ->first();
+        $application = Application::query()
+            ->where('id', $request->application_id)
+            ->whereHas('institute', function ($query) use ($request) {
+                $query->where('institute_code', $request->institute_code); // Search by institute_code
+            })
+            ->with([
+                'exam:id,name',
+                'zamat:id,name',
+                'area:id,name',
+                'institute:id,name',
+                'center',
+                'submittedBy',
+                'approvedBy',
+                'group:id,name'
+            ])
+            ->first();
 
-    if (!$application) {
-        return response()->json(['message' => 'Application not found or does not belong to the provided institute.'], 404);
+        if (!$application) {
+            return response()->json(['message' => 'Application not found or does not belong to the provided institute.'], 404);
+        }
+
+        return response()->json($application);
     }
-
-    return response()->json($application);
-}
 
 
     public function store(Request $request)
@@ -132,8 +135,6 @@ class ApplicationController extends Controller
             'group_id' => 'nullable|exists:groups,id',
             'area_id' => 'nullable|exists:areas,id',
             'center_id' => 'nullable|exists:institutes,id',
-            
-            'gender' => 'nullable|in:male,female',
 
             'students' => 'required|array|min:1',
 
@@ -157,13 +158,15 @@ class ApplicationController extends Controller
                 'zamat_id' => $request->zamat_id,
                 'group_id' => $request->group_id,
                 'center_id' => $request->center_id,
-                'gender' => $request->gender,
                 'payment_status' => 'Pending',
-                'total_amount' => $request->total_amount,
+                'total_amount' => $request->total_amount, // 
                 'payment_method' => $request->payment_method ?? 'Offline',
-                'submitted_by' => Auth::id(),
+                'submitted_by' => Auth::guard('sanctum')->id() ?? null,
+                'application_date' => $request->application_date ?? now(),
                 'students' => $request->students,
             ]);
+
+            $application->load('institute');
 
             return response()->json([
                 'message' => 'Application submitted successfully', 
@@ -245,7 +248,11 @@ class ApplicationController extends Controller
 
         try {
             $application = self::$application ?? Application::findOrFail($id);
-            $application->update(['payment_status' => $request->payment_status]);
+
+            $application->update([
+                'payment_status' => $request->payment_status,
+                'approved_by' => Auth::guard('sanctum')->id() ?? null,
+            ]);
 
             if ($request->payment_status === 'Paid') {
                 foreach ($application->students as $studentData) {
@@ -264,7 +271,6 @@ class ApplicationController extends Controller
                         'date_of_birth' => $studentData['date_of_birth'],
                         'para' => $studentData['para'],
                         'address' => $studentData['address'],
-                        'gender' => $application->gender,
                         'registration_number' => $this->generateRegistrationNumber(),
                     ]);
                 }

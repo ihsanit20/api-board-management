@@ -51,7 +51,6 @@ class StudentController extends Controller
             'father_name_arabic' => 'nullable|string|max:255',
             'date_of_birth' => 'required|date|before:today',
             'address' => 'nullable|string|max:255',
-            'gender' => 'required|string|in:male,female',
             'roll_number' => 'required|string|max:5|unique:students,roll_number',
             'registration_number' => 'required|string|max:9|unique:students,registration_number',
         ]);
@@ -76,7 +75,6 @@ class StudentController extends Controller
             'father_name_arabic' => 'nullable|string|max:255',
             'date_of_birth' => 'sometimes|required|date|before:today',
             'address' => 'nullable|string|max:255',
-            'gender' => 'sometimes|required|string|in:male,female',
             'roll_number' => 'sometimes|required|string|max:5|unique:students,roll_number,' . $id,
             'registration_number' => 'sometimes|required|string|max:9|unique:students,registration_number,' . $id,
         ]);
