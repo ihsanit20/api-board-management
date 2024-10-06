@@ -265,12 +265,12 @@ class ApplicationController extends Controller
                         'area_id' => $application->area_id,
                         'center_id' => $application->center_id,
                         'name' => $studentData['name'],
-                        'name_arabic' => $studentData['name_arabic'],
-                        'father_name' => $studentData['father_name'],
-                        'father_name_arabic' => $studentData['father_name_arabic'],
-                        'date_of_birth' => $studentData['date_of_birth'],
-                        'para' => $studentData['para'],
-                        'address' => $studentData['address'],
+                        'name_arabic' => $studentData['name_arabic'] ?? '',
+                        'father_name' => $studentData['father_name'] ?? '',
+                        'father_name_arabic' => $studentData['father_name_arabic'] ?? '',
+                        'date_of_birth' => $studentData['date_of_birth'] ?? '',
+                        'para' => $studentData['para'] ?? '',
+                        'address' => $studentData['address'] ?? '',
                         'registration_number' => $this->generateRegistrationNumber(),
                     ]);
                 }
