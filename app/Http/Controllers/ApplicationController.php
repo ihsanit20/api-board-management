@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\ApplicationResource;
 use App\Models\Application;
 use App\Models\Exam;
 use App\Models\Student;
@@ -48,6 +49,10 @@ class ApplicationController extends Controller
         $applications = $query
             ->latest('id')
             ->get();
+
+        ApplicationResource::withoutWrapping();
+
+        $applications = ApplicationResource::collection($applications);
     
         // JSON রেসপন্স রিটার্ন করা
         return response()->json($applications);
