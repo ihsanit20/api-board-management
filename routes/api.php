@@ -80,6 +80,7 @@ Route::post('/applications/{application}/bkash-execute-payment', [ApplicationCon
 Route::prefix('site-settings')->group(function () {
     Route::get('/scrolling-notice', [SiteSettingsController::class, 'showScrollingNotice']);
     Route::get('/director-message', [SiteSettingsController::class, 'showDirectorMessage']);
+    Route::get('/secretary-message', [SiteSettingsController::class, 'showSecretaryMessage']);
     Route::get('/about-us', [SiteSettingsController::class, 'showAboutUs']);
 });
 
@@ -89,6 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::put('/site-settings/scrolling-notice', [SiteSettingsController::class, 'updateScrollingNotice']);
     Route::put('/site-settings/director-message', [SiteSettingsController::class, 'updateDirectorMessage']);
+    Route::put('/site-settings/secretary-message', [SiteSettingsController::class, 'updateSecretaryMessage']);
     Route::put('/site-settings/about-us', [SiteSettingsController::class, 'updateAboutUs']);
 
     Route::post('/institutes', [InstituteController::class, 'store']);

@@ -41,6 +41,23 @@ class SiteSettingsController extends Controller
         return response()->json(['message' => 'Director message updated successfully']);
     }
 
+    // Show Secretary Message
+    public function showSecretaryMessage()
+    {
+        $setting = SiteSetting::first();
+        return response()->json(['secretary_message' => $setting->secretary_message]);
+    }
+
+    // Update Secretary Message
+    public function updateSecretaryMessage(Request $request)
+    {
+        $setting = SiteSetting::first();
+        $setting->secretary_message = $request->secretary_message;
+        $setting->save();
+
+        return response()->json(['message' => 'Secretary message updated successfully']);
+    }
+
     // Show About Us
     public function showAboutUs()
     {
@@ -57,4 +74,5 @@ class SiteSettingsController extends Controller
 
         return response()->json(['message' => 'About us updated successfully']);
     }
+
 }

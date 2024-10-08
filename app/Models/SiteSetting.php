@@ -12,6 +12,7 @@ class SiteSetting extends Model
     protected $fillable = [
         'scrolling_notice',
         'director_message',
+        'secretary_message ',
         'about_us',
     ];
 }
