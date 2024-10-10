@@ -57,6 +57,51 @@ class ApplicationController extends Controller
         // JSON রেসপন্স রিটার্ন করা
         return response()->json($applications);
     }
+
+    public function printApplications(Request $request)
+    {
+        $query = Application::query()
+            ->with([
+                'exam:id,name',
+                'zamat:id,name',
+                'area:id,name',
+                'institute:id,name,institute_code',
+                'center',
+                'submittedBy:id,name',
+                'approvedBy:id,name',
+                'group:id,name',
+                'students' // Include students data here for printing
+            ]);
+
+        // Apply filters based on request parameters
+        if ($request->has('zamat_id') && $request->zamat_id) {
+            $query->where('zamat_id', $request->zamat_id);
+        }
+
+        if ($request->has('institute_code') && $request->institute_code) {
+            $query->whereHas('institute', function ($q) use ($request) {
+                $q->where('institute_code', $request->institute_code);
+            });
+        }
+
+        if ($request->has('application_id') && $request->application_id) {
+            $query->where('id', $request->application_id);
+        }
+
+        // Fetch filtered applications
+        $applications = $query->latest('id')->get();
+
+        ApplicationResource::withoutWrapping();
+
+        // Include students in the print view
+        $applications = ApplicationResource::collection($applications->map(function ($application) {
+            return new ApplicationResource($application, true); // Pass true to include students
+        }));
+
+        // JSON response for print
+        return response()->json($applications);
+    }
+
     
     public function getApplicationCounts(Request $request)
     {

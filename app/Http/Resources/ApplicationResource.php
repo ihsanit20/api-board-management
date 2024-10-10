@@ -7,6 +7,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class ApplicationResource extends JsonResource
 {
+    private bool $includeStudents;
+
+    public function __construct($resource, $includeStudents = false)
+    {
+        parent::__construct($resource);
+        $this->includeStudents = $includeStudents;
+    }
+
     /**
      * Transform the resource into an array.
      *
@@ -14,7 +22,7 @@ class ApplicationResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return [
+        $data = [
             "id" => (int) ($this->id),
             "application_date" => (String) ($this->application_date ?? $this->created_at),
             "institute_code_name" => (String) ($this->institute->institute_code . ' - ' . $this->institute->name),
@@ -28,5 +36,12 @@ class ApplicationResource extends JsonResource
             "submitted_by_name" => (String) ($this->submittedBy->name ?? ''),
             "approved_by_name" => (String) ($this->approvedBy->name ?? ''),
         ];
+
+        // Include students only if the flag is true
+        if ($this->includeStudents) {
+            $data['students'] = $this->students ?? [];
+        }
+
+        return $data;
     }
 }
