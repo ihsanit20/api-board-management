@@ -127,7 +127,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/applications', [ApplicationController::class, 'index']); 
     Route::get('/applications/print', [ApplicationController::class, 'printApplications']);
-    Route::get('/application-counts', [ApplicationController::class, 'getApplicationCounts']);   
+    Route::get('/application-counts', [ApplicationController::class, 'getApplicationCounts']);
+    Route::get('/applications/zamat-wise-counts', [ApplicationController::class, 'getZamatWiseCounts']);   
     Route::get('/applications/{id}', [ApplicationController::class, 'show']);        
     Route::put('/applications/{id}', [ApplicationController::class, 'update']);
     Route::delete('/applications/{id}', [ApplicationController::class, 'destroy']);

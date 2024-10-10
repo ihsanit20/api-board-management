@@ -105,24 +105,48 @@ class ApplicationController extends Controller
     
     public function getApplicationCounts(Request $request)
     {
-        // সাধারণ ফিল্টারিং যদি প্রয়োজন হয় (উদাহরণস্বরূপ `zamat_id`, `institute_code`)
+       
         $query = Application::query();
     
-        // মোট নিবন্ধনের সংখ্যা গণনা করা
         $totalApplications = $query->count();
     
-        // পেন্ডিং নিবন্ধনের সংখ্যা গণনা করা
         $pendingApplications = (clone $query)->where('payment_status', 'Pending')->count();
     
-        // পেইড নিবন্ধনের সংখ্যা গণনা করা
         $paidApplications = (clone $query)->where('payment_status', 'Paid')->count();
+
+        $totalStudents = (clone $query)->selectRaw('SUM(JSON_LENGTH(students)) as total_students')->value('total_students');
     
-        // JSON রেসপন্সে সংখ্যা ফেরত দেওয়া
         return response()->json([
             'totalApplications' => $totalApplications,
             'pendingApplications' => $pendingApplications,
-            'paidApplications' => $paidApplications
+            'paidApplications' => $paidApplications,
+            'totalStudents' => (int) $totalStudents
         ]);
+    }
+    
+    public function getZamatWiseCounts()
+    {
+        // Fetch counts of applications and student count grouped by zamat_id
+        $zamatCounts = Application::query()
+            ->select('zamat_id')
+            ->selectRaw('COUNT(*) as total_applications')
+            ->selectRaw('SUM(JSON_LENGTH(students)) as total_students')
+            ->groupBy('zamat_id')
+            ->with('zamat:id,name')
+            ->get();
+    
+        // Format the response with zamat name and counts
+        $formattedCounts = $zamatCounts->map(function ($item) {
+            return [
+                'zamat_id' => $item->zamat_id,
+                'zamat_name' => $item->zamat->name ?? 'Unknown',
+                'total_applications' => $item->total_applications,
+                'total_students' => (int) $item->total_students,
+            ];
+        });
+    
+        // Return JSON response
+        return response()->json($formattedCounts);
     }
     
 
