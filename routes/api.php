@@ -12,6 +12,7 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\InstituteController;
 use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\SiteSettingsController;
+use App\Http\Controllers\SmsController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ZamatController;
 use Illuminate\Http\Request;
@@ -39,6 +40,7 @@ Route::get('/departments', [DepartmentController::class, 'index']);
 Route::get('/departments/{id}', [DepartmentController::class, 'show']);
 
 Route::get('/institutes', [InstituteController::class, 'index']);
+Route::get('/institutes-lite', [InstituteController::class, 'getLiteInstitutes']);
 Route::get('/institutes/{id}', [InstituteController::class, 'show']);
 Route::get('/institute-by-code/{institute_code}', [InstituteController::class, 'instituteByCode']);
 
@@ -146,4 +148,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/examiners/{id}', [ExaminerController::class, 'update']);
     Route::delete('/examiners/{id}', [ExaminerController::class, 'destroy']);
 
+    Route::post('/send-sms', [SmsController::class, 'sendSms']);
 });

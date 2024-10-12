@@ -8,9 +8,7 @@ use Illuminate\Http\Request;
 
 class InstituteController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    
     public function index(Request $request)
     {
         $query = Institute::query()
@@ -43,10 +41,13 @@ class InstituteController extends Controller
             : response()->json($query->paginate($perPage));
     }
     
+    public function getLiteInstitutes()
+    {
+        $institutes = Institute::select('id', 'name', 'phone', 'institute_code')->get();
 
-    /**
-     * Store a newly created resource in storage.
-     */
+        return response()->json($institutes);
+    }
+   
     public function store(Request $request)
     {
         // Validate the request
