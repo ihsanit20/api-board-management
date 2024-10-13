@@ -41,6 +41,10 @@ Route::get('/departments/{id}', [DepartmentController::class, 'show']);
 
 Route::get('/institutes', [InstituteController::class, 'index']);
 Route::get('/institutes-lite', [InstituteController::class, 'getLiteInstitutes']);
+Route::get('/institutes/counts', [InstituteController::class, 'instituteCounts']);
+Route::get('/institutes-application-status-counts', [InstituteController::class, 'institutesApplicationStatusCounts']);
+Route::get('/institutes-with-applications', [InstituteController::class, 'institutesWithApplications']);
+Route::get('/institutes-without-applications', [InstituteController::class, 'institutesWithoutApplications']);
 Route::get('/institutes/{id}', [InstituteController::class, 'show']);
 Route::get('/institute-by-code/{institute_code}', [InstituteController::class, 'instituteByCode']);
 

@@ -23,4 +23,10 @@ class Institute extends Model
     {
         return $this->belongsTo(Area::class);
     }
+
+    public function applications()
+    {
+        return $this->hasMany(Application::class, 'institute_id', 'id');
+    }
+
 }

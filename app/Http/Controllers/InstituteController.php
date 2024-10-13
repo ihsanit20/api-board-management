@@ -44,13 +44,47 @@ class InstituteController extends Controller
     public function getLiteInstitutes()
     {
         $institutes = Institute::select('id', 'name', 'phone', 'institute_code')->get();
-
         return response()->json($institutes);
     }
+
+    public function instituteCounts()
+    {
+        $totalInstitutesCount = Institute::count();
+        $activeInstitutesCount = Institute::where('is_active', true)->count();
+        $centerInstitutesCount = Institute::where('is_center', true)->count();
+
+        return response()->json([
+            'totalInstitutes' => $totalInstitutesCount,
+            'activeInstitutes' => $activeInstitutesCount,
+            'centerInstitutes' => $centerInstitutesCount,
+        ]);
+    }
+
+    public function institutesWithApplications()
+    {
+        $institutesWithApplications = Institute::whereHas('applications')->get();
+        return response()->json($institutesWithApplications);
+    }
+
+    public function institutesWithoutApplications()
+    {
+        $institutesWithoutApplications = Institute::whereDoesntHave('applications')->get();
+        return response()->json($institutesWithoutApplications);
+    }
+
+    public function institutesApplicationStatusCounts()
+    {
+        $institutesWithApplicationsCount = Institute::whereHas('applications')->count();
+        $institutesWithoutApplicationsCount = Institute::whereDoesntHave('applications')->count();
+    
+        return response()->json([
+            'withApplications' => $institutesWithApplicationsCount,
+            'withoutApplications' => $institutesWithoutApplicationsCount,
+        ]);
+    }    
    
     public function store(Request $request)
     {
-        // Validate the request
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:255',
@@ -59,17 +93,14 @@ class InstituteController extends Controller
             'is_center' => 'boolean',
         ]);
 
-        // Find the area based on area_id
         $area = Area::findOrFail($request->area_id);
 
-        // Calculate the new institute serial and institute code
         $maxInstituteCode = Institute::where('area_id', $area->id)->max('institute_code');
 
         $newInstituteSerial = $maxInstituteCode ? (int)substr($maxInstituteCode, -3) + 1 : 1;
 
         $newInstituteCode = $area->area_code . str_pad($newInstituteSerial, 3, '0', STR_PAD_LEFT);
 
-        // Create a new institute using validated data
         $institute = Institute::create([
             'name' => $validatedData['name'],
             'phone' => $validatedData['phone'],
@@ -82,12 +113,9 @@ class InstituteController extends Controller
         return response()->json($institute, 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
+
     public function show(string $id)
     {
-        // Find the institute by ID
         $institute = Institute::findOrFail($id);
 
         return response()->json($institute);
@@ -105,12 +133,8 @@ class InstituteController extends Controller
         return response()->json($institute);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
-        // Validate the request
         $validatedData = $request->validate([
             'name' => 'string|max:255',
             'phone' => 'max:255',
@@ -119,19 +143,14 @@ class InstituteController extends Controller
             'is_center' => 'boolean',
         ]);
 
-        // Find the institute by ID and update it
         $institute = Institute::findOrFail($id);
         $institute->update($validatedData);
 
         return response()->json($institute);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy($id)
     {
-        // Find the institute by ID and delete it
         $institute = Institute::findOrFail($id);
         $institute->delete();
 
