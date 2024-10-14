@@ -40,7 +40,6 @@ Route::get('/departments', [DepartmentController::class, 'index']);
 Route::get('/departments/{id}', [DepartmentController::class, 'show']);
 
 Route::get('/institutes', [InstituteController::class, 'index']);
-Route::get('/institutes-lite', [InstituteController::class, 'getLiteInstitutes']);
 Route::get('/institutes/counts', [InstituteController::class, 'instituteCounts']);
 Route::get('/institutes-application-status-counts', [InstituteController::class, 'institutesApplicationStatusCounts']);
 Route::get('/institutes-with-applications', [InstituteController::class, 'institutesWithApplications']);
@@ -153,4 +152,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/examiners/{id}', [ExaminerController::class, 'destroy']);
 
     Route::post('/send-sms', [SmsController::class, 'sendSms']);
+    Route::get('/sms-logs', [SmsController::class, 'index']);
+    Route::get('/sms-logs/count', [SmsController::class, 'count']);
 });

@@ -40,12 +40,6 @@ class InstituteController extends Controller
             ])
             : response()->json($query->paginate($perPage));
     }
-    
-    public function getLiteInstitutes()
-    {
-        $institutes = Institute::select('id', 'name', 'phone', 'institute_code')->get();
-        return response()->json($institutes);
-    }
 
     public function instituteCounts()
     {

@@ -4,10 +4,35 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use App\Models\SmsLog; // Assuming you have created the SMS log model
+use App\Models\SmsLog; 
 
 class SmsController extends Controller
 {
+
+    public function index(Request $request)
+    {
+        // Optional pagination size from query, default is 10
+        $perPage = $request->query('per_page', 10);
+
+        // Fetch paginated SMS logs, sorted by latest
+        $smsLogs = SmsLog::orderBy('created_at', 'desc')->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => $smsLogs
+        ]);
+    }
+
+    public function count()
+    {
+        $count = SmsLog::count(); // Count total SMS logs
+
+        return response()->json([
+            'success' => true,
+            'total' => $count,
+        ]);
+    }
+
     public function sendSms(Request $request)
     {
         $request->validate([
@@ -19,52 +44,47 @@ class SmsController extends Controller
         $message = $request->input('message');
 
         try {
-            // Prepare the SMS API request
-            $response = Http::get(env('BULKSMS_API_URL'), [
-                'api_key'   => env('BULKSMS_API_KEY'),
-                'senderid'  => env('BULKSMS_SENDER_ID'),
+            $response = Http::get(env('SMS_API_URL'), [
+                'api_key'   => env('SMS_API_KEY'),
+                'senderid'  => env('SMS_SENDER_ID'),
                 'number'    => $number,
                 'message'   => $message,
                 'type'      => 'text'
             ]);
 
-            // Check response and log the result
             if ($response->successful()) {
-                // Log the SMS sending details into the database
                 SmsLog::create([
-                    'institute_name' => $request->input('institute_name') ?? 'Unknown', // Optional field
+                    'institute_name' => $request->input('institute_name') ?? 'Unknown',
                     'phone_number'   => $number,
                     'message'        => $message,
-                    'status'         => 'sent',  // Set status to sent
+                    'status'         => 'sent', 
                 ]);
 
                 return response()->json([
                     'success' => true,
                     'message' => 'SMS sent successfully',
-                    'response' => $response->body()  // Return API response if needed
+                    'response' => $response->body()
                 ]);
             } else {
-                // Log the failure into the database
                 SmsLog::create([
                     'institute_name' => $request->input('institute_name') ?? 'Unknown',
                     'phone_number'   => $number,
                     'message'        => $message,
-                    'status'         => 'failed', // Set status to failed
+                    'status'         => 'failed',
                 ]);
 
                 return response()->json([
                     'success' => false,
                     'message' => 'SMS sending failed',
-                    'response' => $response->body()  // Return API response for failure analysis
+                    'response' => $response->body()
                 ], 500);
             }
         } catch (\Exception $e) {
-            // Catch and log any error that occurs during the process
             SmsLog::create([
                 'institute_name' => $request->input('institute_name') ?? 'Unknown',
                 'phone_number'   => $number,
                 'message'        => $message,
-                'status'         => 'error', // Error status
+                'status'         => 'error',
             ]);
 
             return response()->json([
