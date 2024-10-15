@@ -12,6 +12,7 @@ class SmsLog extends Model
     protected $table = 'sms_logs';
 
     protected $fillable = [
+        'institute_code',
         'institute_name',
         'phone_number',
         'message',
