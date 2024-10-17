@@ -23,13 +23,14 @@ class SmsController extends Controller
 
     public function count()
     {
-        $count = SmsLog::count(); // Count total SMS logs
-
+        $totalSmsParts = SmsLog::sum('sms_parts');
+    
         return response()->json([
             'success' => true,
-            'total' => $count,
+            'total' => $totalSmsParts,
         ]);
     }
+    
 
     public function sendSms(Request $request)
     {
