@@ -37,15 +37,19 @@ class SmsController extends Controller
         $request->validate([
             'number'         => 'required|string',
             'message'        => 'required|string',
-            'institute_code' => 'nullable|string', // Validate institute_code (can be nullable)
-            'institute_name' => 'nullable|string', // Validate institute_name (can be nullable)
+            'institute_code' => 'nullable|string', 
+            'institute_name' => 'nullable|string',
+            'sms_parts'      => 'required|integer',
+            'cost'           => 'required|numeric'
         ]);
 
         // Get the validated inputs
         $number = $request->input('number');
         $message = $request->input('message');
-        $institute_code = $request->input('institute_code') ?? 'Unknown'; // Set default if not provided
-        $institute_name = $request->input('institute_name') ?? 'Unknown'; // Set default if not provided
+        $institute_code = $request->input('institute_code') ?? 'Unknown'; 
+        $institute_name = $request->input('institute_name') ?? 'Unknown'; 
+        $sms_parts = $request->input('sms_parts');
+        $cost = $request->input('cost');
 
         try {
             // Make the API request to the SMS service
@@ -64,6 +68,8 @@ class SmsController extends Controller
                     'institute_name' => $institute_name,
                     'phone_number'   => $number,
                     'message'        => $message,
+                    'sms_parts'      => $sms_parts,
+                    'cost'           => $cost, 
                     'status'         => 'sent',
                 ]);
 
@@ -80,6 +86,8 @@ class SmsController extends Controller
                     'institute_name' => $institute_name,
                     'phone_number'   => $number,
                     'message'        => $message,
+                    'sms_parts'      => $sms_parts,
+                    'cost'           => $cost,
                     'status'         => 'failed',
                 ]);
 
@@ -97,6 +105,8 @@ class SmsController extends Controller
                 'institute_name' => $institute_name,
                 'phone_number'   => $number,
                 'message'        => $message,
+                'sms_parts'      => $sms_parts,
+                'cost'           => $cost,
                 'status'         => 'error',
             ]);
 

@@ -16,6 +16,8 @@ class SmsLog extends Model
         'institute_name',
         'phone_number',
         'message',
+        'sms_parts',
+        'cost',
         'status',
     ];
 }
