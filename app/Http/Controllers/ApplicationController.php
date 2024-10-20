@@ -360,4 +360,73 @@ class ApplicationController extends Controller
     {
         return str_pad(mt_rand(1, 99999999), 8, '0', STR_PAD_LEFT);
     }
+
+    public function updateRegistrationPart(Request $request, $id)
+    {
+        $request->validate([
+            'exam_id' => 'required|exists:exams,id',
+            'institute_id' => 'required|exists:institutes,id',
+            'zamat_id' => 'required|exists:zamats,id',
+            'group_id' => 'nullable|exists:groups,id',
+            'area_id' => 'nullable|exists:areas,id',
+            'center_id' => 'nullable|exists:institutes,id',
+        ]);
+
+        try {
+            // নিবন্ধনের ডাটা আপডেট করা
+            $application = Application::findOrFail($id);
+            $application->update([
+                'exam_id' => $request->exam_id,
+                'institute_id' => $request->institute_id,
+                'zamat_id' => $request->zamat_id,
+                'group_id' => $request->group_id,
+                'area_id' => $request->area_id,
+                'center_id' => $request->center_id,
+            ]);
+
+            return response()->json([
+                'message' => 'Registration information updated successfully', 
+                'application' => $application
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to update registration information', 
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateStudentsPart(Request $request, $id)
+    {
+        $request->validate([
+            'students' => 'required|array|min:1',
+            'students.*.name' => 'required|string|max:255',
+            'students.*.name_arabic' => 'nullable|string|max:255',
+            'students.*.father_name' => 'required|string|max:255',
+            'students.*.father_name_arabic' => 'nullable|string|max:255',
+            'students.*.date_of_birth' => 'required|date|before:today',
+            'students.*.para' => 'nullable|string|max:255',
+            'students.*.address' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            // পরীক্ষার্থীদের তথ্য আপডেট করা
+            $application = Application::findOrFail($id);
+            $application->update([
+                'students' => $request->students,
+            ]);
+
+            return response()->json([
+                'message' => 'Students information updated successfully',
+                'application' => $application
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to update students information',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
 }

@@ -138,6 +138,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/applications/{id}', [ApplicationController::class, 'update']);
     Route::delete('/applications/{id}', [ApplicationController::class, 'destroy']);
     Route::put('/applications/{id}/update-payment-status', [ApplicationController::class, 'updatePaymentStatus']);
+    Route::put('/applications/{id}/update-registration', [ApplicationController::class, 'updateRegistrationPart']);
+    Route::put('/applications/{id}/update-students', [ApplicationController::class, 'updateStudentsPart']);
+
 
     Route::post('/students', [StudentController::class, 'store']);
     Route::put('/students/{id}', [StudentController::class, 'update']); 
