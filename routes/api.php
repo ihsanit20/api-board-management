@@ -14,6 +14,7 @@ use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\SiteSettingsController;
 use App\Http\Controllers\SmsController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\ZamatController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -91,6 +92,8 @@ Route::prefix('site-settings')->group(function () {
 
 // Protected routes (store, update, and destroy)
 Route::middleware('auth:sanctum')->group(function () {
+    Route::resource('users', UserController::class);
+
     Route::post('/register', [AuthController::class, 'register']);
 
     Route::put('/site-settings/scrolling-notice', [SiteSettingsController::class, 'updateScrollingNotice']);
