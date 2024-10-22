@@ -30,23 +30,32 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
+        // Validate phone and password
         $credentials = $request->validate([
             'phone' => 'required|string',
             'password' => 'required|string',
         ]);
-
+    
+        // Attempt login with credentials
         if (!Auth::attempt($credentials)) {
             return response()->json(['message' => 'Your phone or password is incorrect'], 401);
         }
-
+    
+        // Check if the user is active
         $user = Auth::user();
+        if (!$user->is_active) {
+            return response()->json(['message' => 'Your account is inactive. Please contact support.'], 403);
+        }
+    
+        // Generate token if user is active
         $token = $user->createToken('auth_token')->plainTextToken;
-
+    
         return response()->json([
             'token' => $token,
             'user' => $user,
         ]);
     }
+    
 
     public function checkPhone(Request $request)
     {

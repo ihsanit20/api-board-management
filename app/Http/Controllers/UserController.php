@@ -26,6 +26,7 @@ class UserController extends Controller
             'role' => 'required|string',
             'address' => 'nullable|string|max:255',
             'photo' => 'nullable|image|max:2048', // optional profile photo
+            'is_active' => 'boolean', // is_active ফিল্ড যোগ করা হয়েছে
         ]);
 
         // Image upload handling
@@ -43,6 +44,7 @@ class UserController extends Controller
             'role' => $request->role,
             'address' => $request->address,
             'photo' => $photoPath,
+            'is_active' => $request->has('is_active') ? $request->is_active : true, // ডিফল্টভাবে true
         ]);
 
         return response()->json(['message' => 'User created successfully.', 'user' => $user], 201);
@@ -65,6 +67,7 @@ class UserController extends Controller
             'role' => 'required|string',
             'address' => 'nullable|string|max:255',
             'photo' => 'nullable|image|max:2048', // optional profile photo
+            'is_active' => 'boolean', // is_active ফিল্ড যোগ করা হয়েছে
         ]);
 
         // Image upload handling
@@ -82,6 +85,7 @@ class UserController extends Controller
             'role' => $request->role,
             'address' => $request->address,
             'photo' => $photoPath,
+            'is_active' => $request->has('is_active') ? $request->is_active : $user->is_active, // ফিল্ড আপডেট
         ]);
 
         return response()->json(['message' => 'User updated successfully.', 'user' => $user], 200);

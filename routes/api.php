@@ -120,6 +120,10 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::post('/notices', [NoticeController::class, 'store']);
         Route::post('/examiners', [ExaminerController::class, 'store']);
         Route::post('/send-sms', [SmsController::class, 'sendSms']);
+        
+        Route::put('/applications/{id}/update-payment-status', [ApplicationController::class, 'updatePaymentStatus']);
+        Route::put('/applications/{id}/update-registration', [ApplicationController::class, 'updateRegistrationPart']);
+        Route::put('/applications/{id}/update-students', [ApplicationController::class, 'updateStudentsPart']);
     });
 
     // Super Admin এর জন্য Update এবং Delete করার অনুমতি
@@ -157,12 +161,6 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::put('/centers/{id}', [CenterController::class, 'update']);
         Route::delete('/centers/{id}', [CenterController::class, 'destroy']);
 
-        Route::put('/applications/{id}', [ApplicationController::class, 'update']);
-        Route::delete('/applications/{id}', [ApplicationController::class, 'destroy']);
-        Route::put('/applications/{id}/update-payment-status', [ApplicationController::class, 'updatePaymentStatus']);
-        Route::put('/applications/{id}/update-registration', [ApplicationController::class, 'updateRegistrationPart']);
-        Route::put('/applications/{id}/update-students', [ApplicationController::class, 'updateStudentsPart']);
-
         Route::put('/students/{id}', [StudentController::class, 'update']); 
         Route::delete('/students/{id}', [StudentController::class, 'destroy']);
 
@@ -175,7 +173,6 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
 
     // Developer এর জন্য বিশেষ রাউট
     Route::middleware('role:Developer')->group(function () {
-        // এখানে শুধুমাত্র Developer এর জন্য কিছু স্পেশাল রাউট যোগ করা যেতে পারে
         Route::get('/developer-special', function () {
             return 'Developer-specific action';
         });
