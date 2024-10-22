@@ -91,73 +91,94 @@ Route::prefix('site-settings')->group(function () {
 });
 
 // Protected routes (store, update, and destroy)
-Route::middleware('auth:sanctum')->group(function () {
-    Route::resource('users', UserController::class);
+Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 
-    Route::post('/register', [AuthController::class, 'register']);
-
-    Route::put('/site-settings/scrolling-notice', [SiteSettingsController::class, 'updateScrollingNotice']);
-    Route::put('/site-settings/director-message', [SiteSettingsController::class, 'updateDirectorMessage']);
-    Route::put('/site-settings/secretary-message', [SiteSettingsController::class, 'updateSecretaryMessage']);
-    Route::put('/site-settings/about-us', [SiteSettingsController::class, 'updateAboutUs']);
-
-    Route::post('/institutes', [InstituteController::class, 'store']);
-    Route::put('/institutes/{id}', [InstituteController::class, 'update']);
-    Route::delete('/institutes/{id}', [InstituteController::class, 'destroy']);
-
-    Route::post('/departments', [DepartmentController::class, 'store']); 
-    Route::put('/departments/{id}', [DepartmentController::class, 'update']); 
-    Route::delete('/departments/{id}', [DepartmentController::class, 'destroy']);
-
-    Route::post('/zamats', [ZamatController::class, 'store']);
-    Route::put('/zamats/{id}', [ZamatController::class, 'update']);
-    Route::delete('/zamats/{id}', [ZamatController::class, 'destroy']);
-
-    Route::post('/exams', [ExamController::class, 'store']);
-    Route::put('/exams/{id}', [ExamController::class, 'update']);
-    Route::delete('/exams/{id}', [ExamController::class, 'destroy']);
-
-    Route::post('/areas', [AreaController::class, 'store']);
-    Route::put('/areas/{id}', [AreaController::class, 'update']);
-    Route::delete('/areas/{id}', [AreaController::class, 'destroy']);
-
-    Route::post('/fees', [FeeController::class, 'store']);
-    Route::put('/fees/{id}', [FeeController::class, 'update']);
-    Route::delete('/fees/{id}', [FeeController::class, 'destroy']);
-
-    Route::post('/groups', [GroupController::class, 'store']);
-    Route::put('/groups/{id}', [GroupController::class, 'update']); 
-    Route::delete('/groups/{id}', [GroupController::class, 'destroy']);
-
-    Route::post('/centers', [CenterController::class, 'store']);
-    Route::put('/centers/{id}', [CenterController::class, 'update']); 
-    Route::delete('/centers/{id}', [CenterController::class, 'destroy']);
-
+    // Operator, Admin, Super Admin, Developer - সবার জন্য (show, index, count)
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{user}', [UserController::class, 'show']);
     Route::get('/applications', [ApplicationController::class, 'index']); 
     Route::get('/applications/print', [ApplicationController::class, 'printApplications']);
     Route::get('/application-counts', [ApplicationController::class, 'getApplicationCounts']);
     Route::get('/applications/zamat-wise-counts', [ApplicationController::class, 'getZamatWiseCounts']);   
-    Route::get('/applications/{id}', [ApplicationController::class, 'show']);        
-    Route::put('/applications/{id}', [ApplicationController::class, 'update']);
-    Route::delete('/applications/{id}', [ApplicationController::class, 'destroy']);
-    Route::put('/applications/{id}/update-payment-status', [ApplicationController::class, 'updatePaymentStatus']);
-    Route::put('/applications/{id}/update-registration', [ApplicationController::class, 'updateRegistrationPart']);
-    Route::put('/applications/{id}/update-students', [ApplicationController::class, 'updateStudentsPart']);
-
-
-    Route::post('/students', [StudentController::class, 'store']);
-    Route::put('/students/{id}', [StudentController::class, 'update']); 
-    Route::delete('/students/{id}', [StudentController::class, 'destroy']);
-
-    Route::post('/notices', [NoticeController::class, 'store']);
-    Route::put('/notices/{id}', [NoticeController::class, 'update']); 
-    Route::delete('/notices/{id}', [NoticeController::class, 'destroy']);
-
-    Route::post('/examiners', [ExaminerController::class, 'store']);
-    Route::put('/examiners/{id}', [ExaminerController::class, 'update']);
-    Route::delete('/examiners/{id}', [ExaminerController::class, 'destroy']);
-
-    Route::post('/send-sms', [SmsController::class, 'sendSms']);
+    Route::get('/applications/{id}', [ApplicationController::class, 'show']);
     Route::get('/sms-logs', [SmsController::class, 'index']);
     Route::get('/sms-logs/count', [SmsController::class, 'count']);
+
+    // Admin এর জন্য শুধুমাত্র Store করার অনুমতি
+    Route::middleware('role:Admin,Super Admin,Developer')->group(function () {
+        Route::post('/users', [UserController::class, 'store']);
+        Route::post('/register', [AuthController::class, 'register']);
+        Route::post('/institutes', [InstituteController::class, 'store']);
+        Route::post('/departments', [DepartmentController::class, 'store']);
+        Route::post('/zamats', [ZamatController::class, 'store']);
+        Route::post('/exams', [ExamController::class, 'store']);
+        Route::post('/areas', [AreaController::class, 'store']);
+        Route::post('/fees', [FeeController::class, 'store']);
+        Route::post('/groups', [GroupController::class, 'store']);
+        Route::post('/centers', [CenterController::class, 'store']);
+        Route::post('/students', [StudentController::class, 'store']);
+        Route::post('/notices', [NoticeController::class, 'store']);
+        Route::post('/examiners', [ExaminerController::class, 'store']);
+        Route::post('/send-sms', [SmsController::class, 'sendSms']);
+    });
+
+    // Super Admin এর জন্য Update এবং Delete করার অনুমতি
+    Route::middleware('role:Super Admin,Developer')->group(function () {
+        Route::put('/users/{user}', [UserController::class, 'update']);
+        Route::patch('/users/{user}', [UserController::class, 'update']);
+        Route::delete('/users/{user}', [UserController::class, 'destroy']);
+        
+        Route::put('/site-settings/scrolling-notice', [SiteSettingsController::class, 'updateScrollingNotice']);
+        Route::put('/site-settings/director-message', [SiteSettingsController::class, 'updateDirectorMessage']);
+        Route::put('/site-settings/secretary-message', [SiteSettingsController::class, 'updateSecretaryMessage']);
+        Route::put('/site-settings/about-us', [SiteSettingsController::class, 'updateAboutUs']);
+        
+        Route::put('/institutes/{id}', [InstituteController::class, 'update']);
+        Route::delete('/institutes/{id}', [InstituteController::class, 'destroy']);
+        
+        Route::put('/departments/{id}', [DepartmentController::class, 'update']);
+        Route::delete('/departments/{id}', [DepartmentController::class, 'destroy']);
+
+        Route::put('/zamats/{id}', [ZamatController::class, 'update']);
+        Route::delete('/zamats/{id}', [ZamatController::class, 'destroy']);
+
+        Route::put('/exams/{id}', [ExamController::class, 'update']);
+        Route::delete('/exams/{id}', [ExamController::class, 'destroy']);
+
+        Route::put('/areas/{id}', [AreaController::class, 'update']);
+        Route::delete('/areas/{id}', [AreaController::class, 'destroy']);
+
+        Route::put('/fees/{id}', [FeeController::class, 'update']);
+        Route::delete('/fees/{id}', [FeeController::class, 'destroy']);
+
+        Route::put('/groups/{id}', [GroupController::class, 'update']);
+        Route::delete('/groups/{id}', [GroupController::class, 'destroy']);
+
+        Route::put('/centers/{id}', [CenterController::class, 'update']);
+        Route::delete('/centers/{id}', [CenterController::class, 'destroy']);
+
+        Route::put('/applications/{id}', [ApplicationController::class, 'update']);
+        Route::delete('/applications/{id}', [ApplicationController::class, 'destroy']);
+        Route::put('/applications/{id}/update-payment-status', [ApplicationController::class, 'updatePaymentStatus']);
+        Route::put('/applications/{id}/update-registration', [ApplicationController::class, 'updateRegistrationPart']);
+        Route::put('/applications/{id}/update-students', [ApplicationController::class, 'updateStudentsPart']);
+
+        Route::put('/students/{id}', [StudentController::class, 'update']); 
+        Route::delete('/students/{id}', [StudentController::class, 'destroy']);
+
+        Route::put('/notices/{id}', [NoticeController::class, 'update']); 
+        Route::delete('/notices/{id}', [NoticeController::class, 'destroy']);
+
+        Route::put('/examiners/{id}', [ExaminerController::class, 'update']);
+        Route::delete('/examiners/{id}', [ExaminerController::class, 'destroy']);
+    });
+
+    // Developer এর জন্য বিশেষ রাউট
+    Route::middleware('role:Developer')->group(function () {
+        // এখানে শুধুমাত্র Developer এর জন্য কিছু স্পেশাল রাউট যোগ করা যেতে পারে
+        Route::get('/developer-special', function () {
+            return 'Developer-specific action';
+        });
+    });
 });
+
