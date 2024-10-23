@@ -149,6 +149,31 @@ class ApplicationController extends Controller
         return response()->json($formattedCounts);
     }
     
+    public function getUserWiseCounts()
+    {
+        // Fetch counts of applications grouped by submitted_by
+        $userCounts = Application::query()
+            ->select('submitted_by')
+            ->selectRaw('COUNT(*) as total_applications')
+            ->selectRaw('SUM(JSON_LENGTH(students)) as total_students')
+            ->groupBy('submitted_by')
+            ->with(['submittedBy:id,name']) // Assuming submittedBy is a user relationship
+            ->get();
+    
+        // Format the response with user names and counts
+        $formattedCounts = $userCounts->map(function ($item) {
+            return [
+                'submitted_by' => $item->submitted_by,
+                'submitted_by_name' => $item->submittedBy->name ?? 'Unknown',
+                'total_applications' => $item->total_applications,
+                'total_students' => (int) $item->total_students,
+            ];
+        });
+    
+        // Return JSON response
+        return response()->json($formattedCounts);
+    }
+    
 
     public function show($id)
     {
