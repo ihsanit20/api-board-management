@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
@@ -66,17 +67,17 @@ class UserController extends Controller
             'password' => 'nullable|string|min:6|confirmed',
             'role' => 'required|string',
             'address' => 'nullable|string|max:255',
-            'photo' => 'nullable|image|max:2048', // optional profile photo
-            'is_active' => 'boolean', // is_active ফিল্ড যোগ করা হয়েছে
+            'photo' => 'nullable|image|max:2048', 
+            'is_active' => 'boolean', 
         ]);
-
+    
         // Image upload handling
         $photoPath = $user->photo;
         if ($request->hasFile('photo')) {
             $photoPath = $request->file('photo')->store('user_photos', 'public');
         }
-
-        // ইউজার আপডেট
+    
+        // Update the user
         $user->update([
             'name' => $request->name,
             'phone' => $request->phone,
@@ -85,11 +86,17 @@ class UserController extends Controller
             'role' => $request->role,
             'address' => $request->address,
             'photo' => $photoPath,
-            'is_active' => $request->has('is_active') ? $request->is_active : $user->is_active, // ফিল্ড আপডেট
+            'is_active' => $request->has('is_active') ? $request->is_active : $user->is_active, 
         ]);
 
+        if (!$user->is_active && Auth::id() === $user->id) {
+            Auth::logout(); 
+            return response()->json(['message' => 'You have been logged out as your account is now inactive.'], 200);
+        }
+    
         return response()->json(['message' => 'User updated successfully.', 'user' => $user], 200);
     }
+    
 
     // ৫. Remove the specified user from the database (DELETE /api/users/{id})
     public function destroy(User $user)

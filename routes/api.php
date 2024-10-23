@@ -105,9 +105,7 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
     Route::get('/sms-logs/count', [SmsController::class, 'count']);
 
     // Admin এর জন্য শুধুমাত্র Store করার অনুমতি
-    Route::middleware('role:Admin,Super Admin,Developer')->group(function () {
-        Route::post('/users', [UserController::class, 'store']);
-        Route::post('/register', [AuthController::class, 'register']);
+    Route::middleware('role:Admin,Super Admin,Developer')->group(function () {  
         Route::post('/institutes', [InstituteController::class, 'store']);
         Route::post('/departments', [DepartmentController::class, 'store']);
         Route::post('/zamats', [ZamatController::class, 'store']);
@@ -128,6 +126,9 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
 
     // Super Admin এর জন্য Update এবং Delete করার অনুমতি
     Route::middleware('role:Super Admin,Developer')->group(function () {
+        Route::post('/register', [AuthController::class, 'register']);
+
+        Route::post('/users', [UserController::class, 'store']);
         Route::put('/users/{user}', [UserController::class, 'update']);
         Route::patch('/users/{user}', [UserController::class, 'update']);
         Route::delete('/users/{user}', [UserController::class, 'destroy']);

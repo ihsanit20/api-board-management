@@ -44,7 +44,7 @@ class AuthController extends Controller
         // Check if the user is active
         $user = Auth::user();
         if (!$user->is_active) {
-            return response()->json(['message' => 'Your account is inactive. Please contact support.'], 403);
+            return response()->json(['message' => 'Your account is inactive. Please contact support.'], 401);
         }
     
         // Generate token if user is active
