@@ -30,7 +30,6 @@ class ApplicationController extends Controller
                 'group:id,name'
             ]);
     
-        // ফিল্টারিং প্যারামিটার চেক করা
         if ($request->has('zamat_id') && $request->zamat_id) {
             $query->where('zamat_id', $request->zamat_id);
         }
@@ -45,18 +44,32 @@ class ApplicationController extends Controller
             $query->where('id', $request->application_id);
         }
     
-        // ফিল্টার করা ডেটা ফেচ করা
-        $applications = $query
-            ->latest('id')
-            ->get();
+        $perPage = $request->input('per_page', 15); 
+    
+        if ($perPage === 'all') {
+            $applications = $query->latest('id')->get();
+    
+            return response()->json([
+                'data' => ApplicationResource::collection($applications),
+                'total' => $applications->count(),
+                'per_page' => $applications->count(),
+                'current_page' => 1,
+                'last_page' => 1,
+            ]);
+        }
+
+        $applications = $query->latest('id')->paginate($perPage);
 
         ApplicationResource::withoutWrapping();
 
-        $applications = ApplicationResource::collection($applications);
-    
-        // JSON রেসপন্স রিটার্ন করা
-        return response()->json($applications);
-    }
+        return response()->json([
+            'data' => ApplicationResource::collection($applications),
+            'total' => $applications->total(), // পেজিনেটর থেকে মোট আইটেম সংখ্যা
+            'per_page' => $applications->perPage(), // প্রতি পেজে আইটেম সংখ্যা
+            'current_page' => $applications->currentPage(), // বর্তমান পেজ নম্বর
+            'last_page' => $applications->lastPage(), // মোট পেজ সংখ্যা
+        ]);
+    }    
 
     public function printApplications(Request $request)
     {
