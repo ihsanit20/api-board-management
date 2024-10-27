@@ -114,7 +114,6 @@ class ApplicationController extends Controller
         // JSON response for print
         return response()->json($applications);
     }
-
     
     public function getApplicationCounts(Request $request)
     {
@@ -366,7 +365,13 @@ class ApplicationController extends Controller
                 'approved_by' => Auth::guard('sanctum')->id() ?? null,
             ]);
 
-            if ($request->payment_status === 'Paid') {
+            if ($request->payment_status === 'Paid' && !Student::where('application_id', $application->id)->exists())
+            {
+                $registration_numbers = Student::query()
+                    ->where('exam_id', $application->exam_id)
+                    ->pluck('registration_number')
+                    ->toArray();
+
                 foreach ($application->students as $studentData) {
                     Student::create([
                         'application_id' => $application->id,
@@ -383,7 +388,7 @@ class ApplicationController extends Controller
                         'date_of_birth' => $studentData['date_of_birth'] ?? '',
                         'para' => $studentData['para'] ?? '',
                         'address' => $studentData['address'] ?? '',
-                        'registration_number' => $this->generateRegistrationNumber(),
+                        'registration_number' => $this->generateRegistrationNumber($application->exam_id, $registration_numbers),
                     ]);
                 }
             }
@@ -394,10 +399,17 @@ class ApplicationController extends Controller
         }
     }
 
-    private function generateRegistrationNumber()
+    private function generateRegistrationNumber($exam_id, &$previous_registration_numbers)
     {
-        return str_pad(mt_rand(1, 99999999), 8, '0', STR_PAD_LEFT);
-    }
+        do {
+            $rand = rand(10000, 99999); 
+            $new_registration_number = $exam_id . $rand;
+        } while (in_array($new_registration_number, $previous_registration_numbers));
+    
+        $previous_registration_numbers[] = $new_registration_number;
+    
+        return $new_registration_number;
+    }  
 
     public function updateRegistrationPart(Request $request, $id)
     {
@@ -411,7 +423,6 @@ class ApplicationController extends Controller
         ]);
 
         try {
-            // নিবন্ধনের ডাটা আপডেট করা
             $application = Application::findOrFail($id);
             $application->update([
                 'exam_id' => $request->exam_id,
@@ -448,7 +459,6 @@ class ApplicationController extends Controller
         ]);
 
         try {
-            // পরীক্ষার্থীদের তথ্য আপডেট করা
             $application = Application::findOrFail($id);
             $application->update([
                 'students' => $request->students,
