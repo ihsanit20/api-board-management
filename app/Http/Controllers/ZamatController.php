@@ -12,7 +12,6 @@ class ZamatController extends Controller
      */
     public function index()
     {
-        // Retrieve all zamats
         $zamats = Zamat::with('department')->get();
         return response()->json($zamats);
     }

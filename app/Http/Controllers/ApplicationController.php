@@ -79,11 +79,11 @@ class ApplicationController extends Controller
                 'zamat:id,name',
                 'area:id,name',
                 'institute:id,name,institute_code',
-                'center',
+                'center:id,name,institute_code',
                 'submittedBy:id,name',
                 'approvedBy:id,name',
                 'group:id,name',
-                'students' // Include students data here for printing
+                'students' 
             ]);
 
         // Apply filters based on request parameters

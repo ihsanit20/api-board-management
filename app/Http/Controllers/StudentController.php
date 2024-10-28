@@ -24,6 +24,10 @@ class StudentController extends Controller
         if ($request->has('registration_number') && $request->registration_number) {
             $query->where('registration_number', $request->registration_number);
         }
+
+        if ($request->has('application_id') && $request->application_id) {
+            $query->where('application_id', $request->application_id);
+        }
     
         if ($request->has('institute_code') && $request->institute_code) {
             $query->whereHas('institute', function ($q) use ($request) {
@@ -47,6 +51,36 @@ class StudentController extends Controller
     
         return response()->json($students);
     }
+
+    public function PrintStudents(Request $request)
+    {
+        $query = Student::with([
+            'exam:id,name',
+            'zamat:id,name,department_id',
+            'zamat.department:id,name',
+            'institute:id,name,institute_code',
+            'center:id,name,institute_code',
+            'group:id,name'
+        ]);
+
+        if ($request->has('application_id') && $request->application_id) {
+            $query->where('application_id', $request->application_id);
+        }
+    
+        if ($request->has('institute_code') && $request->institute_code) {
+            $query->whereHas('institute', function ($q) use ($request) {
+                $q->where('institute_code', $request->institute_code);
+            });
+        }
+    
+        if ($request->has('zamat_id') && $request->zamat_id) {
+            $query->where('zamat_id', $request->zamat_id);
+        }
+    
+        $students = $query->get();
+    
+        return response()->json($students);
+    }
     
     public function show($id)
     {
@@ -55,7 +89,7 @@ class StudentController extends Controller
             'zamat:id,name',
             'area:id,name',
             'institute:id,name,institute_code',
-            'center',
+            'center:id,name',
             'group:id,name'
         ])->findOrFail($id);
 

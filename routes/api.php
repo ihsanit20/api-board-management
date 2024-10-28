@@ -69,6 +69,7 @@ Route::get('/centers', [CenterController::class, 'index']);
 Route::get('/centers/{id}', [CenterController::class, 'show']);
 
 Route::get('/students', [StudentController::class, 'index']); 
+Route::get('/students-print', [StudentController::class, 'PrintStudents']); 
 Route::get('/students/{id}', [StudentController::class, 'show']);
 
 Route::get('/notices', [NoticeController::class, 'index']); 
