@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Exam;
 use App\Models\Student;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
@@ -133,4 +134,24 @@ class StudentController extends Controller
             return response()->json(['message' => 'Failed to delete student', 'error' => $e->getMessage()], 500);
         }
     }
+
+    public function centerWiseStudentCount()
+    {
+        $data = Student::with(['center', 'zamat'])
+            ->select('center_id', 'zamat_id', DB::raw('COUNT(id) as student_count'))
+            ->groupBy('center_id', 'zamat_id')
+            ->get()
+            ->mapToGroups(function ($item) {
+                return [
+                    optional($item->center)->name => [
+                        'zamat_name' => optional($item->zamat)->name,
+                        'student_count' => $item->student_count
+                    ]
+                ];
+            });
+    
+        return response()->json($data);
+    }
+    
+    
 }
