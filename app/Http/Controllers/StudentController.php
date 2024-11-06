@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Exam;
+use App\Models\Institute;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -152,6 +153,42 @@ class StudentController extends Controller
     
         return response()->json($data);
     }
+
+    public function areaWiseInstituteStudentCount()
+    {
+        $data = DB::table('students')
+            ->join('institutes', 'students.institute_id', '=', 'institutes.id')
+            ->join('areas', 'institutes.area_id', '=', 'areas.id')
+            ->join('zamats', 'students.zamat_id', '=', 'zamats.id')
+            ->select(
+                'areas.name as area_name',
+                'institutes.name as institute_name',
+                'institutes.institute_code',
+                'institutes.phone',
+                'zamats.name as zamat_name',
+                DB::raw('COUNT(students.id) as student_count')
+            )
+            ->groupBy('areas.id', 'institutes.id', 'zamats.id')
+            ->get()
+            ->groupBy('area_name')
+            ->map(function ($area) {
+                return $area->groupBy('institute_name')->map(function ($institutes) {
+                    $institute = $institutes->first();
+                    return [
+                        'institute_name' => $institute->institute_name,
+                        'institute_code' => $institute->institute_code,
+                        'phone' => $institute->phone,
+                        'zamat_counts' => $institutes->map(function ($item) {
+                            return [
+                                'zamat_name' => $item->zamat_name,
+                                'student_count' => $item->student_count,
+                            ];
+                        })->values()
+                    ];
+                })->values();
+            });
     
-    
+        return response()->json($data);
+    }
+     
 }
