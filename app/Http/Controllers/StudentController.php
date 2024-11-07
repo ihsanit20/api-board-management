@@ -154,9 +154,11 @@ class StudentController extends Controller
         return response()->json($data);
     }
 
-    public function areaWiseInstituteStudentCount()
+    public function areaWiseInstituteStudentCount(Request $request)
     {
-        $data = DB::table('students')
+        $areaName = $request->input('area_name'); // ফ্রন্টএন্ড থেকে প্রাপ্ত area_name
+    
+        $query = DB::table('students')
             ->join('institutes', 'students.institute_id', '=', 'institutes.id')
             ->join('areas', 'institutes.area_id', '=', 'areas.id')
             ->join('zamats', 'students.zamat_id', '=', 'zamats.id')
@@ -168,8 +170,14 @@ class StudentController extends Controller
                 'zamats.name as zamat_name',
                 DB::raw('COUNT(students.id) as student_count')
             )
-            ->groupBy('areas.name', 'institutes.name', 'institutes.institute_code', 'institutes.phone', 'zamats.name')
-            ->get()
+            ->groupBy('areas.name', 'institutes.name', 'institutes.institute_code', 'institutes.phone', 'zamats.name');
+    
+        // যদি area_name প্যারামিটার পাঠানো হয়, তাহলে ফিল্টার করুন
+        if ($areaName) {
+            $query->where('areas.name', $areaName);
+        }
+    
+        $data = $query->get()
             ->groupBy('area_name')
             ->map(function ($area) {
                 return $area->groupBy('institute_name')->map(function ($institutes) {
@@ -189,6 +197,7 @@ class StudentController extends Controller
             });
     
         return response()->json($data);
-    }    
+    }
+      
      
 }
