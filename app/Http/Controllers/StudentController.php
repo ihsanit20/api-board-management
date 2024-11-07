@@ -168,7 +168,7 @@ class StudentController extends Controller
                 'zamats.name as zamat_name',
                 DB::raw('COUNT(students.id) as student_count')
             )
-            ->groupBy('areas.id', 'institutes.id', 'zamats.id')
+            ->groupBy('areas.name', 'institutes.name', 'institutes.institute_code', 'institutes.phone', 'zamats.name')
             ->get()
             ->groupBy('area_name')
             ->map(function ($area) {
@@ -189,6 +189,6 @@ class StudentController extends Controller
             });
     
         return response()->json($data);
-    }
+    }    
      
 }
