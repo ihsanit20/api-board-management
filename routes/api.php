@@ -85,6 +85,8 @@ Route::get('/applications/public-show', [ApplicationController::class, 'publicSh
 Route::post('/applications/{application}/bkash-create-payment', [ApplicationController::class, 'bkashCreatePayment']);
 Route::post('/applications/{application}/bkash-execute-payment', [ApplicationController::class, 'bkashExecutePayment']);
 
+Route::get('/sms-records', [SmsController::class, 'seeRecords']);
+
 // Site Settings API routes
 Route::prefix('site-settings')->group(function () {
     Route::get('/scrolling-notice', [SiteSettingsController::class, 'showScrollingNotice']);
@@ -106,6 +108,7 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
     Route::get('/applications/user-wise-counts', [ApplicationController::class, 'getUserWiseCounts']);   
     Route::get('/applications/{id}', [ApplicationController::class, 'show']);
     Route::get('/sms-logs', [SmsController::class, 'index']);
+    
     Route::get('/sms-logs/count', [SmsController::class, 'count']);
 
     // Admin এর জন্য শুধুমাত্র Store করার অনুমতি

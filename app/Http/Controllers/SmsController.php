@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use App\Models\SmsLog; 
+use App\Models\SmsLog;
+use App\Models\SmsRecord;
 
 class SmsController extends Controller
 {
@@ -20,6 +21,13 @@ class SmsController extends Controller
             'data' => $smsLogs
         ]);
     }
+
+    public function seeRecords(Request $request)
+    {
+        $perPage = $request->query('per_page', 10);
+        $smsRecords = SmsRecord::orderBy('created_at', 'desc')->paginate($perPage);
+        return response()->json($smsRecords, 200);
+    }    
 
     public function count()
     {
