@@ -199,5 +199,30 @@ class StudentController extends Controller
         return response()->json($data);
     }
       
-     
+    public function studentsWithoutRollNumber(Request $request)
+    {
+        $query = Student::select('id', 'name', 'registration_number', 'father_name', 'date_of_birth')
+            ->with([
+                'institute:id,name,institute_code',
+                'zamat:id,name'
+            ])
+            ->whereNull('roll_number'); // যাদের roll_number নেই
+        
+        // Institute Code দিয়ে ফিল্টার
+        if ($request->has('institute_code') && $request->institute_code) {
+            $query->whereHas('institute', function ($q) use ($request) {
+                $q->where('institute_code', $request->institute_code);
+            });
+        }
+    
+        // Zamat ID দিয়ে ফিল্টার
+        if ($request->has('zamat_id') && $request->zamat_id) {
+            $query->where('zamat_id', $request->zamat_id);
+        }
+    
+        $students = $query->get();
+    
+        return response()->json($students);
+    }
+    
 }

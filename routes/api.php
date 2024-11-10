@@ -85,6 +85,10 @@ Route::get('/applications/public-show', [ApplicationController::class, 'publicSh
 Route::post('/applications/{application}/bkash-create-payment', [ApplicationController::class, 'bkashCreatePayment']);
 Route::post('/applications/{application}/bkash-execute-payment', [ApplicationController::class, 'bkashExecutePayment']);
 
+
+Route::get('/without-roll-number', [StudentController::class, 'studentsWithoutRollNumber']);
+
+
 Route::get('/sms-records', [SmsController::class, 'seeRecords']);
 
 // Site Settings API routes

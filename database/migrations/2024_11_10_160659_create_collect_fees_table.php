@@ -11,17 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('fee_collections', function (Blueprint $table) {
+        Schema::create('collect_fees', function (Blueprint $table) {
             $table->id();
-            
-            $table->foreignId('exam_id')->constrained();
-            $table->foreignId('institute_id')->constrained();
-            $table->foreignId('zamat_id')->constrained();
-
-            $table->enum('payment_method', ['online', 'offline'])->default('offline');
-            $table->string('transaction_id')->nullable();
             $table->json('student_ids');
             $table->decimal('total_amount', 10, 2);
+            $table->enum('payment_method', ['online', 'offline'])->default('offline');
+            $table->string('transaction_id')->nullable();
             $table->timestamps();
         });
     }
@@ -31,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('fee_collections');
+        Schema::dropIfExists('collect_fees');
     }
 };
