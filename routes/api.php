@@ -7,6 +7,7 @@ use App\Http\Controllers\CenterController;
 use App\Http\Controllers\DepartmentController; 
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExaminerController;
+use App\Http\Controllers\FeeCollectionController;
 use App\Http\Controllers\FeeController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\InstituteController;
@@ -72,6 +73,7 @@ Route::get('/students-print', [StudentController::class, 'PrintStudents']);
 Route::get('/students-count-center', [StudentController::class, 'centerWiseStudentCount']);
 Route::get('/print-envelop', [StudentController::class, 'areaWiseInstituteStudentCount']); 
 Route::get('/students/{id}', [StudentController::class, 'show']);
+Route::get('/without-roll-number', [StudentController::class, 'studentsWithoutRollNumber']);
 
 Route::get('/notices', [NoticeController::class, 'index']); 
 Route::get('/notices/{id}', [NoticeController::class, 'show']);
@@ -84,9 +86,8 @@ Route::get('/applications/public-show', [ApplicationController::class, 'publicSh
 Route::post('/applications/{application}/bkash-create-payment', [ApplicationController::class, 'bkashCreatePayment']);
 Route::post('/applications/{application}/bkash-execute-payment', [ApplicationController::class, 'bkashExecutePayment']);
 
-
-Route::get('/without-roll-number', [StudentController::class, 'studentsWithoutRollNumber']);
-
+Route::post('/fees/collect', [FeeCollectionController::class, 'store']);
+Route::post('/fees/bkash/execute/{id}', [FeeCollectionController::class, 'bkashExecutePayment']);
 
 Route::get('/sms-records', [SmsController::class, 'seeRecords']);
 

@@ -156,7 +156,7 @@ class StudentController extends Controller
 
     public function areaWiseInstituteStudentCount(Request $request)
     {
-        $areaName = $request->input('area_name'); // ফ্রন্টএন্ড থেকে প্রাপ্ত area_name
+        $areaName = $request->input('area_name'); 
     
         $query = DB::table('students')
             ->join('institutes', 'students.institute_id', '=', 'institutes.id')
@@ -201,28 +201,43 @@ class StudentController extends Controller
       
     public function studentsWithoutRollNumber(Request $request)
     {
-        $query = Student::select('id', 'name', 'registration_number', 'father_name', 'date_of_birth')
-            ->with([
-                'institute:id,name,institute_code',
-                'zamat:id,name'
-            ])
-            ->whereNull('roll_number'); // যাদের roll_number নেই
-        
-        // Institute Code দিয়ে ফিল্টার
+        $query = Student::select(
+                'students.id',
+                'students.name',
+                'students.registration_number',
+                'students.father_name',
+                'students.date_of_birth',
+                'institutes.name as institute_name',
+                'institutes.institute_code',
+                'institutes.phone'
+            )
+            ->leftJoin('institutes', 'students.institute_id', '=', 'institutes.id')
+            ->with('zamat:id,name')
+            ->whereNull('students.roll_number');
+    
+        // ফিল্টার ইনস্টিটিউট কোডের ভিত্তিতে
         if ($request->has('institute_code') && $request->institute_code) {
-            $query->whereHas('institute', function ($q) use ($request) {
-                $q->where('institute_code', $request->institute_code);
-            });
+            $query->where('institutes.institute_code', $request->institute_code);
         }
     
-        // Zamat ID দিয়ে ফিল্টার
+        // ফিল্টার জামাত আইডির ভিত্তিতে
         if ($request->has('zamat_id') && $request->zamat_id) {
-            $query->where('zamat_id', $request->zamat_id);
+            $query->where('students.zamat_id', $request->zamat_id);
         }
     
         $students = $query->get();
     
-        return response()->json($students);
-    }
+        // ইনস্টিটিউটের তথ্য প্রথম শিক্ষার্থীর ডেটা থেকে নেওয়া হচ্ছে
+        $institute = $students->isNotEmpty() ? [
+            'name' => $students->first()->institute_name,
+            'institute_code' => $students->first()->institute_code,
+            'phone' => $students->first()->phone,
+        ] : null;
     
+        return response()->json([
+            'students' => $students,
+            'institute' => $institute,
+        ]);
+    }
+        
 }
