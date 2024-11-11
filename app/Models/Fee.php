@@ -14,12 +14,13 @@ class Fee extends Model
      *
      * @var array
      */
-    protected $fillable = [
-        'exam_id',
-        'zamat_id',
-        'amount',
-        'late_fee',
+    protected $fillable = ['exam_id', 'zamat_amounts', 'last_date', 'final_date'];
+
+
+    protected $casts = [
+        'zamat_amounts' => 'array',
     ];
+
 
     /**
      * Get the exam associated with the fee.
