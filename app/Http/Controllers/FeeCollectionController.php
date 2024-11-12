@@ -72,8 +72,10 @@ class FeeCollectionController extends Controller
     
         if ($paymentID) {
             $response = $this->executePayment($paymentID);
-    
-            if ($response->transactionStatus === 'Completed') {
+            
+            // return response()->json($response);
+
+            if ($response && $response->transactionStatus === 'Completed') {
                 $feeCollection = CollectFee::findOrFail($id);
                 $feeCollection->update([
                     'transaction_id' => $response->trxID,
@@ -105,12 +107,18 @@ class FeeCollectionController extends Controller
     {
         foreach ($studentIds as $studentId) {
             $student = Student::find($studentId);
+            
+            $previous_max_roll_number = Student::query()
+                ->where('exam_id', $student->exam_id)
+                ->max('roll_number');
 
             if (!$student->roll_number) {
-                $student->roll_number = str_pad($student->id, 6, '0', STR_PAD_LEFT);
+                $student->roll_number = $previous_max_roll_number
+                    ? $previous_max_roll_number + 1 
+                    : $student->exam_id . "0001";
                 $student->save();
             }
         }
+        
     }
-
 }
