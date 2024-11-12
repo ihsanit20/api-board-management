@@ -6,6 +6,7 @@ use App\Models\CollectFee;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Msilabs\Bkash\BkashPayment;
 
 class FeeCollectionController extends Controller
@@ -88,8 +89,35 @@ class FeeCollectionController extends Controller
                 $studentIds = json_decode($feeCollection->student_ids, true);
                 $this->assignRollNumbers($studentIds, $feeCollection->exam_id);
     
+                $institutePhone = $feeCollection->institute->phone ?? null;
+                $examName = $feeCollection->exam->name ?? '';
+                $zamatName = $feeCollection->zamat->name ?? '';
+                $instituteCode = $feeCollection->institute->institute_code ?? '';
+                $totalAmount = $feeCollection->total_amount;
+                $transactionId = $response->trxID;
+                $totalStudent = count($studentIds);
+    
+                if (!empty($institutePhone)) {
+                    $message = "আপনার \"{$examName}\"-এর ফি জমা সফল হয়েছে! ইলহাক: {$instituteCode}, মারহালা: {$zamatName}, পরীক্ষার্থী সংখ্যা: {$totalStudent}, ফি’র পরিমান: {$totalAmount}, Trx id: {$transactionId}\nধন্যবাদ\n-তানযীম";
+    
+                    $smsResponse = Http::get(env('SMS_API_URL'), [
+                        'api_key'   => env('SMS_API_KEY'),
+                        'senderid'  => env('SMS_SENDER_ID'),
+                        'number'    => $institutePhone,
+                        'message'   => $message,
+                        'type'      => 'text'
+                    ]);
+    
+                    if ($smsResponse->failed()) {
+                        return response()->json([
+                            'message' => 'Payment successful, but SMS sending failed.',
+                            'status' => true,
+                        ], 201);
+                    }
+                }
+    
                 return response()->json([
-                    'message' => 'Payment successful. Fee collected.',
+                    'message' => 'Payment successful. Fee collected and SMS sent.',
                     'status' => true,
                 ], 201);
             } else {
@@ -104,7 +132,7 @@ class FeeCollectionController extends Controller
             'message' => 'Invalid payment ID or status.',
             'status' => false,
         ], 200);
-    }  
+    }
 
     private function assignRollNumbers(array $studentIds, $examId)
     {
