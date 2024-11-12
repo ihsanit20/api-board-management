@@ -39,7 +39,7 @@ class FeeCollectionController extends Controller
             ]);
 
             if ($request->payment_method === 'online') {
-                $callback_url = env('FRONTEND_BASE_URL', 'http://localhost:5173') . "/bkash/callback/{$feeCollection->id}";
+                $callback_url = env('FRONTEND_BASE_URL', 'https://www.tanjimnarsingdi.org') . "/bkash/callback/{$feeCollection->id}";
                 $response = $this->createPayment($feeCollection->total_amount, $feeCollection->id, $callback_url);
 
                 if (isset($response->bkashURL)) {
