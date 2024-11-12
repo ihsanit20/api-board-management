@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Exam;
 use App\Models\Institute;
 use App\Models\Student;
+use App\Models\Zamat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -201,43 +202,70 @@ class StudentController extends Controller
       
     public function studentsWithoutRollNumber(Request $request)
     {
-        $query = Student::select(
-                'students.id',
-                'students.name',
-                'students.registration_number',
-                'students.father_name',
-                'students.date_of_birth',
-                'institutes.name as institute_name',
-                'institutes.institute_code',
-                'institutes.phone'
+        $institute = Institute::query()
+            ->select(
+                'id',
+                'name',
+                'phone',
+                'institute_code',
             )
-            ->leftJoin('institutes', 'students.institute_id', '=', 'institutes.id')
-            ->with('zamat:id,name')
-            ->whereNull('students.roll_number');
-    
-        // ফিল্টার ইনস্টিটিউট কোডের ভিত্তিতে
-        if ($request->has('institute_code') && $request->institute_code) {
-            $query->where('institutes.institute_code', $request->institute_code);
-        }
-    
-        // ফিল্টার জামাত আইডির ভিত্তিতে
-        if ($request->has('zamat_id') && $request->zamat_id) {
-            $query->where('students.zamat_id', $request->zamat_id);
-        }
-    
-        $students = $query->get();
-    
-        // ইনস্টিটিউটের তথ্য প্রথম শিক্ষার্থীর ডেটা থেকে নেওয়া হচ্ছে
-        $institute = $students->isNotEmpty() ? [
-            'name' => $students->first()->institute_name,
-            'institute_code' => $students->first()->institute_code,
-            'phone' => $students->first()->phone,
-        ] : null;
+            ->where('institute_code', $request->institute_code)
+            ->firstOrFail();
+
+        $zamat = Zamat::query()
+            ->select(
+                'id',
+                'name',
+                'department_id',
+            )
+            ->with('department:id,name')
+            ->findOrFail($request->zamat_id);
+        
+        // return
+        $students = Student::query()
+            ->select(
+                'id',
+                'name',
+                'registration_number',
+                'father_name',
+                'date_of_birth',
+            )
+            ->where('institute_id', $institute->id)
+            ->where('zamat_id', $zamat->id)
+            ->whereNull('roll_number')
+            ->get();
     
         return response()->json([
             'students' => $students,
             'institute' => $institute,
+            'zamat' => $zamat,
         ]);
     }
-        
+    
+    public function studentsWithRollNumber(Request $request)
+    {
+        $institute = Institute::query()
+            ->select('id', 'name', 'phone', 'institute_code')
+            ->where('institute_code', $request->institute_code)
+            ->firstOrFail();
+
+        $zamat = Zamat::query()
+            ->select('id', 'name', 'department_id')
+            ->with('department:id,name')
+            ->findOrFail($request->zamat_id);
+
+        $students = Student::query()
+            ->select('id', 'name', 'registration_number', 'father_name', 'date_of_birth', 'roll_number')
+            ->where('institute_id', $institute->id)
+            ->where('zamat_id', $zamat->id)
+            ->whereNotNull('roll_number') 
+            ->get();
+
+        return response()->json([
+            'students' => $students,
+            'institute' => $institute,
+            'zamat' => $zamat,
+        ]);
+    }
+
 }

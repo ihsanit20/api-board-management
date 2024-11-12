@@ -11,7 +11,6 @@ use Msilabs\Bkash\BkashPayment;
 class FeeCollectionController extends Controller
 {
     use BkashPayment;
-
     public function store(Request $request)
     {
         $request->validate([
@@ -20,62 +19,66 @@ class FeeCollectionController extends Controller
             'total_amount' => 'required|numeric',
             'payment_method' => 'required|in:online,offline',
             'transaction_id' => 'nullable|string',
+            'exam_id' => 'required|exists:exams,id',
+            'institute_id' => 'required|exists:institutes,id',
+            'zamat_id' => 'required|exists:zamats,id',
         ]);
-    
+
         DB::beginTransaction();
-    
+
         try {
             $feeCollection = CollectFee::create([
                 'student_ids' => json_encode($request->student_ids),
                 'total_amount' => $request->total_amount,
                 'payment_method' => $request->payment_method,
                 'transaction_id' => $request->transaction_id,
+                'exam_id' => $request->exam_id,
+                'institute_id' => $request->institute_id,
+                'zamat_id' => $request->zamat_id,
             ]);
-    
+
             if ($request->payment_method === 'online') {
                 $callback_url = env('FRONTEND_BASE_URL', 'http://localhost:5173') . "/bkash/callback/{$feeCollection->id}";
                 $response = $this->createPayment($feeCollection->total_amount, $feeCollection->id, $callback_url);
-    
+
                 if (isset($response->bkashURL)) {
                     DB::commit();
                     return response()->json([
-                       'message'   => 'Payment is in progress. Redirecting to payment gateway...',
-                        'response'  => $response,
-                        'success'   => !!($response->bkashURL ?? false),
-                        'bkashURL'  => $response->bkashURL ?? '#'
+                        'message' => 'Payment is in progress. Redirecting to payment gateway...',
+                        'response' => $response,
+                        'success' => !!($response->bkashURL ?? false),
+                        'bkashURL' => $response->bkashURL ?? '#',
                     ], 201);
                 }
-    
+
                 throw new \Exception("Error creating payment: Payment creation failed. No payment ID received.");
             }
-    
+
             DB::commit();
-    
+
             return response()->json([
                 'message' => 'Fee collected successfully.',
                 'data' => $feeCollection,
             ], 201);
-    
+
         } catch (\Exception $e) {
             DB::rollBack();
-    
+
             return response()->json([
                 'message' => 'Failed to collect fee.',
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
-    
+
     public function bkashExecutePayment($id, Request $request)
     {
         $paymentID = $request->input('paymentID');
     
         if ($paymentID) {
             $response = $this->executePayment($paymentID);
-            
-            // return response()->json($response);
-
-            if ($response && $response->transactionStatus === 'Completed') {
+    
+            if ($response && ($response->transactionStatus ?? '') === 'Completed') {
                 $feeCollection = CollectFee::findOrFail($id);
                 $feeCollection->update([
                     'transaction_id' => $response->trxID,
@@ -83,7 +86,7 @@ class FeeCollectionController extends Controller
                 ]);
     
                 $studentIds = json_decode($feeCollection->student_ids, true);
-                $this->assignRollNumbers($studentIds);
+                $this->assignRollNumbers($studentIds, $feeCollection->exam_id);
     
                 return response()->json([
                     'message' => 'Payment successful. Fee collected.',
@@ -101,24 +104,24 @@ class FeeCollectionController extends Controller
             'message' => 'Invalid payment ID or status.',
             'status' => false,
         ], 200);
-    }
-    
-    private function assignRollNumbers(array $studentIds)
+    }  
+
+    private function assignRollNumbers(array $studentIds, $examId)
     {
         foreach ($studentIds as $studentId) {
             $student = Student::find($studentId);
-            
-            $previous_max_roll_number = Student::query()
-                ->where('exam_id', $student->exam_id)
-                ->max('roll_number');
-
+    
             if (!$student->roll_number) {
-                $student->roll_number = $previous_max_roll_number
-                    ? $previous_max_roll_number + 1 
-                    : $student->exam_id . "0001";
+                $previousMaxRollNumber = Student::query()
+                    ->where('exam_id', $examId)
+                    ->max('roll_number');
+    
+                $student->roll_number = $previousMaxRollNumber
+                    ? $previousMaxRollNumber + 1
+                    : $examId . "0001";
                 $student->save();
             }
         }
-        
     }
+
 }

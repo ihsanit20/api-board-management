@@ -74,6 +74,8 @@ Route::get('/students-count-center', [StudentController::class, 'centerWiseStude
 Route::get('/print-envelop', [StudentController::class, 'areaWiseInstituteStudentCount']); 
 Route::get('/students/{id}', [StudentController::class, 'show']);
 Route::get('/without-roll-number', [StudentController::class, 'studentsWithoutRollNumber']);
+Route::get('/with-roll-number', [StudentController::class, 'studentsWithRollNumber']);
+
 
 Route::get('/notices', [NoticeController::class, 'index']); 
 Route::get('/notices/{id}', [NoticeController::class, 'show']);

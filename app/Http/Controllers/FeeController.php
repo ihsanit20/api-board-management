@@ -10,7 +10,7 @@ class FeeController extends Controller
 {
     public function index()
     {
-        $fees = Fee::with(['exam'])->get();
+        $fees = Fee::with(['exam:id,name'])->get();
 
         return response()->json($fees, Response::HTTP_OK);
     }
