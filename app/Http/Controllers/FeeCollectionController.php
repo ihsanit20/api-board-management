@@ -98,7 +98,7 @@ class FeeCollectionController extends Controller
                 $totalStudent = count($studentIds);
     
                 if (!empty($institutePhone)) {
-                    $message = "আপনার \"{$examName}\"-এর ফি জমা সফল হয়েছে! ইলহাক: {$instituteCode}, মারহালা: {$zamatName}, পরীক্ষার্থী সংখ্যা: {$totalStudent}, ফি’র পরিমান: {$totalAmount}, Trx id: {$transactionId}\nধন্যবাদ\n-তানযীম";
+                    $message = "আপনার \"{$examName}\"-এর ফি জমা সফল হয়েছে! ইলহাক: {$instituteCode}, মারহালা: {$zamatName}, পরীক্ষার্থী সংখ্যা: {$totalStudent} জন, ফি’র পরিমান: {$totalAmount}TK, Trx id: {$transactionId}\nধন্যবাদ\n-তানযীম";
     
                     $smsResponse = Http::get(env('SMS_API_URL'), [
                         'api_key'   => env('SMS_API_KEY'),
