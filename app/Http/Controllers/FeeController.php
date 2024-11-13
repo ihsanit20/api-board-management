@@ -37,6 +37,23 @@ class FeeController extends Controller
         return response()->json($fee, Response::HTTP_CREATED);
     }
 
+    public function latestFee()
+    {
+        // return
+        $latestFee = Fee::query()
+            ->with(['exam:id,name'])
+            ->latest('exam_id')
+            ->latest('id')
+            ->first();
+    
+        if (!$latestFee) {
+            return response()->json(['message' => 'No fee entry found'], Response::HTTP_NOT_FOUND);
+        }
+    
+        return response()->json($latestFee, Response::HTTP_OK);
+    }
+    
+
     public function show(string $id)
     {
         $fee = Fee::with(['exam'])->findOrFail($id);

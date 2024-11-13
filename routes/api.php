@@ -60,6 +60,7 @@ Route::get('/areas', [AreaController::class, 'index']);
 Route::get('/areas/{id}', [AreaController::class, 'show']);
 
 Route::get('/fees', [FeeController::class, 'index']);
+Route::get('/fees/latest', [FeeController::class, 'latestFee']);
 Route::get('/fees/{id}', [FeeController::class, 'show']);
 
 Route::get('/groups', [GroupController::class, 'index']); 
@@ -88,8 +89,8 @@ Route::get('/applications/public-show', [ApplicationController::class, 'publicSh
 Route::post('/applications/{application}/bkash-create-payment', [ApplicationController::class, 'bkashCreatePayment']);
 Route::post('/applications/{application}/bkash-execute-payment', [ApplicationController::class, 'bkashExecutePayment']);
 
-Route::post('/fees/collect', [FeeCollectionController::class, 'store']);
-Route::post('/fees/bkash/execute/{id}', [FeeCollectionController::class, 'bkashExecutePayment']);
+Route::post('/collect-fees', [FeeCollectionController::class, 'store']);
+Route::post('/collect-fees/bkash/execute/{id}', [FeeCollectionController::class, 'bkashExecutePayment']);
 
 Route::get('/sms-records', [SmsController::class, 'seeRecords']);
 
