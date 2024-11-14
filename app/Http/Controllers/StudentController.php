@@ -155,9 +155,10 @@ class StudentController extends Controller
         return response()->json($data);
     }
 
-    public function areaWiseInstituteStudentCount(Request $request)
+    public function PrintEnvelop(Request $request)
     {
         $areaName = $request->input('area_name'); 
+        $instituteCode = $request->input('institute_code');
     
         $query = DB::table('students')
             ->join('institutes', 'students.institute_id', '=', 'institutes.id')
@@ -173,9 +174,13 @@ class StudentController extends Controller
             )
             ->groupBy('areas.name', 'institutes.name', 'institutes.institute_code', 'institutes.phone', 'zamats.name');
     
-        // যদি area_name প্যারামিটার পাঠানো হয়, তাহলে ফিল্টার করুন
+
         if ($areaName) {
             $query->where('areas.name', $areaName);
+        }
+
+        if ($instituteCode) {
+            $query->where('institutes.institute_code', $instituteCode);
         }
     
         $data = $query->get()

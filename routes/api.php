@@ -72,7 +72,7 @@ Route::get('/centers/{id}', [CenterController::class, 'show']);
 Route::get('/students', [StudentController::class, 'index']); 
 Route::get('/students-print', [StudentController::class, 'PrintStudents']); 
 Route::get('/students-count-center', [StudentController::class, 'centerWiseStudentCount']);
-Route::get('/print-envelop', [StudentController::class, 'areaWiseInstituteStudentCount']); 
+Route::get('/print-envelop', [StudentController::class, 'PrintEnvelop']); 
 Route::get('/students/{id}', [StudentController::class, 'show']);
 Route::get('/without-roll-number', [StudentController::class, 'studentsWithoutRollNumber']);
 Route::get('/with-roll-number', [StudentController::class, 'studentsWithRollNumber']);
