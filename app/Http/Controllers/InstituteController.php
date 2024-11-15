@@ -41,6 +41,21 @@ class InstituteController extends Controller
             : response()->json($query->paginate($perPage));
     }
 
+    public function getInstitutesByArea(Request $request)
+    {
+        $request->validate([
+            'area_id' => 'required|exists:areas,id',
+        ]);
+
+        $institutes = Institute::where('area_id', $request->input('area_id'))
+            ->select('id','name', 'institute_code', 'phone')
+            ->oldest('institute_code')
+            ->get();
+
+        return response()->json($institutes);
+    }
+
+
     public function instituteCounts()
     {
         $totalInstitutesCount = Institute::count();

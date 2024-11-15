@@ -11,12 +11,14 @@ use App\Http\Controllers\FeeCollectionController;
 use App\Http\Controllers\FeeController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\InstituteController;
+use App\Http\Controllers\LetterDistributionCenterController;
 use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\SiteSettingsController;
 use App\Http\Controllers\SmsController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ZamatController;
+use App\Models\LetterDistributionCenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -42,6 +44,7 @@ Route::get('/departments', [DepartmentController::class, 'index']);
 Route::get('/departments/{id}', [DepartmentController::class, 'show']);
 
 Route::get('/institutes', [InstituteController::class, 'index']);
+Route::get('institutes-by-area', [InstituteController::class, 'getInstitutesByArea']);
 Route::get('/institutes/counts', [InstituteController::class, 'instituteCounts']);
 Route::get('/institutes-application-status-counts', [InstituteController::class, 'institutesApplicationStatusCounts']);
 Route::get('/institutes-with-applications', [InstituteController::class, 'institutesWithApplications']);
@@ -94,7 +97,10 @@ Route::post('/collect-fees/bkash/execute/{id}', [FeeCollectionController::class,
 
 Route::get('/sms-records', [SmsController::class, 'seeRecords']);
 
-// Site Settings API routes
+Route::get('letter-distribution-centers', [LetterDistributionCenterController::class, 'index']);
+Route::get('/search-letter-center', [LetterDistributionCenterController::class, 'searchByInstituteCode']);
+Route::get('letter-distribution-centers/{id}', [LetterDistributionCenterController::class, 'show']);
+
 Route::prefix('site-settings')->group(function () {
     Route::get('/scrolling-notice', [SiteSettingsController::class, 'showScrollingNotice']);
     Route::get('/director-message', [SiteSettingsController::class, 'showDirectorMessage']);
@@ -188,6 +194,11 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::post('/examiners', [ExaminerController::class, 'store']);
         Route::put('/examiners/{id}', [ExaminerController::class, 'update']);
         Route::delete('/examiners/{id}', [ExaminerController::class, 'destroy']);
+
+
+        Route::post('letter-distribution-centers', [LetterDistributionCenterController::class, 'store']);
+        Route::put('letter-distribution-centers/{id}', [LetterDistributionCenterController::class, 'update']);
+        Route::delete('letter-distribution-centers/{id}', [LetterDistributionCenterController::class, 'destroy']);
     });
 
     // Developer এর জন্য বিশেষ রাউট
