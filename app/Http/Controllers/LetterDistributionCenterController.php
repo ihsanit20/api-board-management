@@ -41,7 +41,7 @@ class LetterDistributionCenterController extends Controller
         $instituteIds = json_decode($center->institute_ids, true);
 
         $institutes = Institute::whereIn('id', $instituteIds)
-            ->select('id', 'name', 'phone')
+            ->select('id', 'institute_code', 'name', 'phone')
             ->get();
 
         $responseData = [
