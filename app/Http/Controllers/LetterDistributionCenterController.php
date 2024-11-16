@@ -31,7 +31,7 @@ class LetterDistributionCenterController extends Controller
             return response()->json(['message' => 'Institute not found'], 404);
         }
 
-        $center = LetterDistributionCenter::with(['area:id,name', 'institute:id,name,institute_code'])
+        $center = LetterDistributionCenter::with(['area:id,name', 'institute:id,name,institute_code,phone'])
             ->where('institute_id', $institute->id)
             ->first();
 
