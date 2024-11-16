@@ -16,6 +16,8 @@ class LetterDistributionCenter extends Model
         'institute_id',
         'name',
         'institute_ids',
+        'person', 
+        'phone'
     ];
 
     protected $casts = [

@@ -60,17 +60,22 @@ class LetterDistributionCenterController extends Controller
             'name' => 'required|unique:letter_distribution_centers,name',
             'institute_ids' => 'nullable|array',
             'institute_ids.*' => 'exists:institutes,id',
+            'person' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20',
         ]);
     
         $center = LetterDistributionCenter::create([
             'area_id' => $request->area_id,
             'institute_id' => $request->institute_id,
             'name' => $request->name,
-            'institute_ids' => json_encode($request->institute_ids), // JSON হিসেবে সংরক্ষণ
+            'institute_ids' => json_encode($request->institute_ids),
+            'person' => $request->person,
+            'phone' => $request->phone,
         ]);
     
         return response()->json($center, 201);
     }
+    
     
 
     public function show($id)
@@ -83,18 +88,29 @@ class LetterDistributionCenterController extends Controller
     public function update(Request $request, $id)
     {
         $center = LetterDistributionCenter::findOrFail($id);
-
+    
         $request->validate([
             'area_id' => 'required|exists:areas,id',
             'institute_id' => 'required|exists:institutes,id',
             'name' => 'required|unique:letter_distribution_centers,name,' . $id,
-            'institute_ids' => 'nullable|json',
+            'institute_ids' => 'nullable|array',
+            'institute_ids.*' => 'exists:institutes,id',
+            'person' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20',
         ]);
-
-        $center->update($request->all());
-
+    
+        $center->update([
+            'area_id' => $request->area_id,
+            'institute_id' => $request->institute_id,
+            'name' => $request->name,
+            'institute_ids' => json_encode($request->institute_ids),
+            'person' => $request->person,
+            'phone' => $request->phone,
+        ]);
+    
         return response()->json($center);
     }
+    
 
 
     public function destroy($id)
