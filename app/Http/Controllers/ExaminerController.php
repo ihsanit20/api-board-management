@@ -7,31 +7,33 @@ use App\Models\Examiner;
 
 class ExaminerController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        // Fetch all examiners
-        $examiners = Examiner::all();
+        $examiners = Examiner::with([
+            'institute:id,name',
+            'center:id,name',   
+            'exam:id,name'     
+        ])->get();
+
         return response()->json($examiners);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        // Validate request data
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'designation' => 'nullable|string|max:255',
-            'institute' => 'nullable|string|max:255',
-            'address' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:15',
+            'nid' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:255',
+            'education' => 'nullable|json',
+            'institute_id' => 'required|exists:institutes,id',
+            'type' => 'required|in:examiner,guard',
+            'designation' => 'nullable|string|max:255',
+            'exam_id' => 'required|exists:exams,id',
+            'center_id' => 'nullable|exists:centers,id',
+            'status' => 'required|in:active,pending,rejected',
         ]);
 
-        // Create a new examiner
         $examiner = Examiner::create($validatedData);
 
         return response()->json([
@@ -40,31 +42,28 @@ class ExaminerController extends Controller
         ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
-        // Find examiner by ID
-        $examiner = Examiner::findOrFail($id);
+        $examiner = Examiner::with(['institute', 'center', 'exam'])->findOrFail($id);
         return response()->json($examiner);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
-        // Validate request data
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'designation' => 'nullable|string|max:255',
-            'institute' => 'nullable|string|max:255',
-            'address' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:15',
+            'nid' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:255',
+            'education' => 'nullable|json',
+            'institute_id' => 'required|exists:institutes,id',
+            'type' => 'required|in:examiner,guard',
+            'designation' => 'nullable|string|max:255',
+            'exam_id' => 'required|exists:exams,id',
+            'center_id' => 'nullable|exists:centers,id',
+            'status' => 'required|in:active,pending,rejected',
         ]);
 
-        // Find and update examiner
         $examiner = Examiner::findOrFail($id);
         $examiner->update($validatedData);
 
@@ -74,12 +73,8 @@ class ExaminerController extends Controller
         ]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        // Find and delete examiner
         $examiner = Examiner::findOrFail($id);
         $examiner->delete();
 
