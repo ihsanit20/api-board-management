@@ -25,8 +25,8 @@ class ExaminerController extends Controller
             'phone' => 'nullable|string|max:15',
             'nid' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:255',
-            'education' => 'nullable|array', // Validate as an array
-            'education.*.exam' => 'required|string|max:255', // Validate each field of education
+            'education' => 'nullable|array', 
+            'education.*.exam' => 'required|string|max:255',
             'education.*.passing_year' => 'required|integer|min:1900|max:' . date('Y'),
             'education.*.result' => 'required|string|max:50',
             'education.*.institute' => 'required|string|max:255',
@@ -39,7 +39,7 @@ class ExaminerController extends Controller
             'status' => 'required|in:active,pending,rejected',
         ]);
 
-        $validatedData['education'] = json_encode($validatedData['education']); // Convert to JSON for storage
+        $validatedData['education'] = json_encode($validatedData['education']); 
 
         $examiner = Examiner::create($validatedData);
 
