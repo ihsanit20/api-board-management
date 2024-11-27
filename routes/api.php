@@ -140,6 +140,9 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
 
         Route::post('letter-distribution-centers', [LetterDistributionCenterController::class, 'store']);
         Route::put('letter-distribution-centers/{id}', [LetterDistributionCenterController::class, 'update']);
+
+        Route::post('/examiners', [ExaminerController::class, 'store']);
+        Route::put('/examiners/{id}', [ExaminerController::class, 'update']);
     });
 
     // Super Admin এর জন্য Update এবং Delete করার অনুমতি
@@ -194,8 +197,6 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
 
         Route::delete('/notices/{id}', [NoticeController::class, 'destroy']);
 
-        Route::post('/examiners', [ExaminerController::class, 'store']);
-        Route::put('/examiners/{id}', [ExaminerController::class, 'update']);
         Route::delete('/examiners/{id}', [ExaminerController::class, 'destroy']);
 
         Route::delete('letter-distribution-centers/{id}', [LetterDistributionCenterController::class, 'destroy']);
@@ -208,4 +209,3 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         });
     });
 });
-
