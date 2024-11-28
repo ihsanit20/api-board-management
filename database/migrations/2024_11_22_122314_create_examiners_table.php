@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('examiners', function (Blueprint $table) {
@@ -18,7 +15,10 @@ return new class extends Migration
             $table->string('nid')->nullable();
             $table->string('address')->nullable();
             $table->json('education')->nullable();
+            $table->json('experience')->nullable();
+            $table->string('ex_experience')->nullable();
             $table->unsignedBigInteger('institute_id');
+            $table->string('student_count')->nullable();
             $table->enum('type', ['examiner', 'guard']);
             $table->enum('designation', [
                 'হল পরিদর্শক',
