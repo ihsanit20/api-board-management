@@ -10,7 +10,7 @@ class ExaminerController extends Controller
     public function index()
     {
         $examiners = Examiner::with([
-            'institute:id,name',
+            'institute:id,name,institute_code',
             'center:id,name',   
             'exam:id,name',     
         ])->get();
@@ -27,7 +27,7 @@ class ExaminerController extends Controller
             'address' => 'nullable|string|max:255',
             'education' => 'nullable|array', 
             'education.*.exam' => 'nullable|string|max:255',
-            'education.*.passing_year' => 'nullable|integer|min:1900|max:' . date('Y'),
+            'education.*.passing_year' => 'nullable|integer|min:1300|max:' . date('Y'),
             'education.*.result' => 'nullable|string|max:50',
             'education.*.institute' => 'nullable|string|max:255',
             'education.*.board' => 'nullable|string|max:255',
@@ -52,7 +52,15 @@ class ExaminerController extends Controller
             ? json_encode($validatedData['experience']) 
             : json_encode([]);
 
+        // Create Examiner
         $examiner = Examiner::create($validatedData);
+
+        // Generate Examiner Code
+        $examinerCode = str_pad($examiner->exam_id, 2, '0', STR_PAD_LEFT) . 
+                        str_pad($examiner->id, 3, '0', STR_PAD_LEFT);
+
+        // Update Examiner with the generated code
+        $examiner->update(['examiner_code' => $examinerCode]);
 
         return response()->json([
             'message' => 'Examiner created successfully',
@@ -60,11 +68,36 @@ class ExaminerController extends Controller
         ], 201);
     }
 
+
     public function show(string $id)
     {
         $examiner = Examiner::with(['institute', 'center', 'exam'])->findOrFail($id);
         return response()->json($examiner);
     }
+
+    public function search(Request $request)
+    {
+        $validatedData = $request->validate([
+            'examiner_code' => 'required|string|max:255',
+            'phone' => 'required|string|max:15',
+        ]);
+
+        $examiner = Examiner::with([
+            'institute:id,name,institute_code',
+            'center:id,name',   
+            'exam:id,name',     
+        ])
+            ->where('examiner_code', $validatedData['examiner_code'])
+            ->where('phone', $validatedData['phone'])
+            ->first();
+
+        if (!$examiner) {
+            return response()->json(['message' => 'Examiner not found'], 404);
+        }
+
+        return response()->json($examiner);
+    }
+
 
     public function update(Request $request, string $id)
     {

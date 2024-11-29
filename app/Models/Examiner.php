@@ -23,11 +23,12 @@ class Examiner extends Model
         'exam_id',
         'center_id',
         'status',
+        'examiner_code',
     ];
 
     protected $casts = [
-        'education' => 'array', // JSON ফিল্ড হিসেবে কাস্ট
-        'experience' => 'array', // JSON ফিল্ড হিসেবে কাস্ট
+        'education' => 'array',
+        'experience' => 'array',
     ];
 
     public function institute()

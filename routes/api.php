@@ -85,7 +85,9 @@ Route::get('/notices', [NoticeController::class, 'index']);
 Route::get('/notices/{id}', [NoticeController::class, 'show']);
 
 Route::get('/examiners', [ExaminerController::class, 'index']);
+Route::post('/examiners', [ExaminerController::class, 'store']);
 Route::get('/examiners/{id}', [ExaminerController::class, 'show']);
+Route::post('/examiner/search', [ExaminerController::class, 'search']);
 
 Route::post('/applications', [ApplicationController::class, 'store']);
 Route::get('/applications/public-show', [ApplicationController::class, 'publicShow']);
@@ -108,10 +110,8 @@ Route::prefix('site-settings')->group(function () {
     Route::get('/about-us', [SiteSettingsController::class, 'showAboutUs']);
 });
 
-// Protected routes (store, update, and destroy)
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 
-    // Operator, Admin, Super Admin, Developer - সবার জন্য (show, index, count)
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/{user}', [UserController::class, 'show']);
     Route::get('/applications', [ApplicationController::class, 'index']); 
@@ -124,7 +124,6 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
     
     Route::get('/sms-logs/count', [SmsController::class, 'count']);
 
-    // Admin এর জন্য শুধুমাত্র Store করার অনুমতি
     Route::middleware('role:Admin,Super Admin,Developer')->group(function () {  
         Route::post('/institutes', [InstituteController::class, 'store']);
         Route::put('/institutes/{id}', [InstituteController::class, 'update']);
@@ -141,11 +140,9 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::post('letter-distribution-centers', [LetterDistributionCenterController::class, 'store']);
         Route::put('letter-distribution-centers/{id}', [LetterDistributionCenterController::class, 'update']);
 
-        Route::post('/examiners', [ExaminerController::class, 'store']);
         Route::put('/examiners/{id}', [ExaminerController::class, 'update']);
     });
 
-    // Super Admin এর জন্য Update এবং Delete করার অনুমতি
     Route::middleware('role:Super Admin,Developer')->group(function () {
         Route::post('/register', [AuthController::class, 'register']);
 
@@ -202,7 +199,6 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::delete('letter-distribution-centers/{id}', [LetterDistributionCenterController::class, 'destroy']);
     });
 
-    // Developer এর জন্য বিশেষ রাউট
     Route::middleware('role:Developer')->group(function () {
         Route::get('/developer-special', function () {
             return 'Developer-specific action';

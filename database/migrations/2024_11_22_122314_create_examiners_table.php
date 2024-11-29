@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('examiners', function (Blueprint $table) {
             $table->id();
+            $table->string('examiner_code')->unique()->nullable();
             $table->string('name');
             $table->string('phone')->nullable();
             $table->string('nid')->nullable();
