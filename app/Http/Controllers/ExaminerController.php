@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Examiner;
+use Illuminate\Support\Facades\Http;
 
 class ExaminerController extends Controller
 {
@@ -61,6 +62,60 @@ class ExaminerController extends Controller
         ], 201);
     }
 
+    public function publicStore(Request $request)
+    {
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:15',
+            'nid' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:255',
+            'education' => 'nullable|array', 
+            'education.*.exam' => 'nullable|string|max:255',
+            'education.*.passing_year' => 'nullable|integer|min:1300|max:' . date('Y'),
+            'education.*.result' => 'nullable|string|max:50',
+            'education.*.institute' => 'nullable|string|max:255',
+            'education.*.board' => 'nullable|string|max:255',
+            'experience' => 'nullable|array', 
+            'experience.duration' => 'nullable|string|max:255',
+            'experience.books' => 'nullable|string|max:255',
+            'ex_experience' => 'nullable|string|max:255',
+            'student_count' => 'nullable|string|max:255',
+            'institute_id' => 'required|exists:institutes,id',
+            'type' => 'required|in:examiner,guard',
+            'designation' => 'nullable|string|max:255',
+            'exam_id' => 'required|exists:exams,id',
+            'center_id' => 'nullable|exists:institutes,id',
+            'status' => 'required|in:active,pending,rejected',
+        ]);
+
+        $validatedData['education'] = !empty($validatedData['education']) 
+            ? json_encode($validatedData['education']) 
+            : json_encode([]);
+
+        $examiner = Examiner::create($validatedData);
+
+        $examinerCode = str_pad($examiner->exam_id, 2, '0', STR_PAD_LEFT) . 
+                        str_pad($examiner->id, 3, '0', STR_PAD_LEFT);
+
+        $examiner->update(['examiner_code' => $examinerCode]);
+
+        if (!empty($examiner->phone)) {
+            $message = "আপনার আবেদন সফল হয়েছে। নাম: {$examiner->name}, ফোন: {$examiner->phone}, কোড: {$examiner->examiner_code}\n-তানযীম পরীক্ষা নিয়ন্ত্রণ বিভাগ";
+
+            Http::get(env('SMS_API_URL'), [
+                'api_key'   => env('SMS_API_KEY'),
+                'senderid'  => env('SMS_SENDER_ID'),
+                'number'    => $examiner->phone,
+                'message'   => $message,
+                'type'      => 'text'
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Examiner created successfully',
+            'examiner' => $examiner
+        ], 201);
+    }
 
     public function show(string $id)
     {
