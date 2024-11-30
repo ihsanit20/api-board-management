@@ -36,10 +36,12 @@ return new class extends Migration
             $table->unsignedBigInteger('center_id')->nullable();
             $table->enum('status', ['active', 'pending', 'rejected'])->default('pending');
             $table->timestamps();
-            
+
             $table->foreign('institute_id')->references('id')->on('institutes')->onDelete('cascade');
-            $table->foreign('center_id')->references('id')->on('centers')->onDelete('set null');
+            $table->foreign('center_id')->references('id')->on('institutes')->onDelete('set null');
             $table->foreign('exam_id')->references('id')->on('exams')->onDelete('cascade');
+
+            $table->unique(['phone', 'type']);
         });
     }
 

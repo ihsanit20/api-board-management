@@ -28,7 +28,7 @@ class Examiner extends Model
 
     protected $casts = [
         'education' => 'array',
-        'experience' => 'array',
+        'experience' => 'json',
     ];
 
     public function institute()
