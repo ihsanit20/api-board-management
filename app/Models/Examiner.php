@@ -24,6 +24,7 @@ class Examiner extends Model
         'center_id',
         'status',
         'examiner_code',
+        'student_count',
     ];
 
     protected $casts = [

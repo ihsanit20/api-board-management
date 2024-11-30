@@ -169,7 +169,7 @@ class ExaminerController extends Controller
             'type' => 'required|in:examiner,guard',
             'designation' => 'nullable|string|max:255',
             'exam_id' => 'required|exists:exams,id',
-            'center_id' => 'nullable|exists:centers,id',
+            'center_id' => 'nullable|exists:institutes,id',
             'status' => 'required|in:active,pending,rejected',
         ]);
 

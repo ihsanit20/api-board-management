@@ -85,8 +85,8 @@ Route::get('/notices', [NoticeController::class, 'index']);
 Route::get('/notices/{id}', [NoticeController::class, 'show']);
 
 Route::get('/examiners', [ExaminerController::class, 'index']);
-Route::post('/examiners', [ExaminerController::class, 'store']);
 Route::post('/examiners-public', [ExaminerController::class, 'publicStore']);
+Route::post('/examiners', [ExaminerController::class, 'store']);
 Route::get('/examiners/{id}', [ExaminerController::class, 'show']);
 Route::post('/examiner/search', [ExaminerController::class, 'search']);
 
