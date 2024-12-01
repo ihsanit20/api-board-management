@@ -100,15 +100,9 @@ class ExaminerController extends Controller
         $examiner->update(['examiner_code' => $examinerCode]);
 
         if (!empty($examiner->phone)) {
-            $message = "আপনার আবেদন সফল হয়েছে। নাম: {$examiner->name}, ফোন: {$examiner->phone}, কোড: {$examiner->examiner_code}\n-তানযীম পরীক্ষা নিয়ন্ত্রণ বিভাগ";
+            $message = "আপনার আবেদন সফল হয়েছে।\nনাম: {$examiner->name},\nফোন: {$examiner->phone},\nকোড: {$examiner->examiner_code}\n-তানযীম পরীক্ষা নিয়ন্ত্রণ বিভাগ";
 
-            Http::get(env('SMS_API_URL'), [
-                'api_key'   => env('SMS_API_KEY'),
-                'senderid'  => env('SMS_SENDER_ID'),
-                'number'    => $examiner->phone,
-                'message'   => $message,
-                'type'      => 'text'
-            ]);
+            $this->sendSmsWithStore($message, $examiner->phone, "Examiner");
         }
 
         return response()->json([

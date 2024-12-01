@@ -100,15 +100,14 @@ class FeeCollectionController extends Controller
                 if (!empty($institutePhone)) {
                     $message = "\"{$examName}\"-এর ফি জমা সফল হয়েছে! ইলহাক: {$instituteCode}, মারহালা: {$zamatName}, পরীক্ষার্থী সংখ্যা: {$totalStudent} জন, ফি’র পরিমান: {$totalAmount}TK, TRXID: {$transactionId}\nধন্যবাদ\n-তানযীম";
     
-                    $smsResponse = Http::get(env('SMS_API_URL'), [
-                        'api_key'   => env('SMS_API_KEY'),
-                        'senderid'  => env('SMS_SENDER_ID'),
-                        'number'    => $institutePhone,
-                        'message'   => $message,
-                        'type'      => 'text'
-                    ]);
+                    $smsResponse = $this->sendSmsWithStore(
+                        $message,
+                        $institutePhone,
+                        "Fee Collection",
+                        $feeCollection->institute->id ?? null
+                    );
     
-                    if ($smsResponse->failed()) {
+                    if ($smsResponse && $smsResponse->failed()) {
                         return response()->json([
                             'message' => 'Payment successful, but SMS sending failed.',
                             'status' => true,
