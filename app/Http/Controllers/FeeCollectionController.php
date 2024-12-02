@@ -6,12 +6,54 @@ use App\Models\CollectFee;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Msilabs\Bkash\BkashPayment;
 
 class FeeCollectionController extends Controller
 {
     use BkashPayment;
+
+    public function index(Request $request)
+    {
+        $query = CollectFee::with([
+            'exam:id,name', 
+            'institute:id,name,institute_code', 
+            'zamat:id,name'
+        ]);
+
+        if ($request->has('institute_id')) {
+            $query->where('institute_id', $request->institute_id);
+        }
+
+        if ($request->has('zamat_id')) {
+            $query->where('zamat_id', $request->zamat_id);
+        }
+
+        if ($request->has('exam_id')) {
+            $query->where('exam_id', $request->exam_id);
+        }
+
+        if ($request->has('payment_method')) {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        if ($request->has('date_from') && $request->has('date_to')) {
+            $query->whereBetween('created_at', [$request->date_from, $request->date_to]);
+        }
+
+        // Add condition for payment_method "online" with transaction_id
+        if ($request->has('payment_method') && $request->payment_method === 'online') {
+            $query->whereNotNull('transaction_id');
+        }
+
+        // Fetch all data without pagination
+        $feeCollections = $query->orderBy('created_at', 'desc')->get();
+
+        return response()->json([
+            'message' => 'Fee collection list retrieved successfully.',
+            'data' => $feeCollections,
+        ], 200);
+    }
+    
     public function store(Request $request)
     {
         $request->validate([
@@ -24,9 +66,9 @@ class FeeCollectionController extends Controller
             'institute_id' => 'required|exists:institutes,id',
             'zamat_id' => 'required|exists:zamats,id',
         ]);
-
+    
         DB::beginTransaction();
-
+    
         try {
             $feeCollection = CollectFee::create([
                 'student_ids' => json_encode($request->student_ids),
@@ -37,11 +79,11 @@ class FeeCollectionController extends Controller
                 'institute_id' => $request->institute_id,
                 'zamat_id' => $request->zamat_id,
             ]);
-
+    
             if ($request->payment_method === 'online') {
                 $callback_url = env('FRONTEND_BASE_URL', 'https://tanjim.madrasah.cc') . "/bkash/callback/{$feeCollection->id}";
                 $response = $this->createPayment($feeCollection->total_amount, $feeCollection->id, $callback_url);
-
+    
                 if (isset($response->bkashURL)) {
                     DB::commit();
                     return response()->json([
@@ -51,26 +93,31 @@ class FeeCollectionController extends Controller
                         'bkashURL' => $response->bkashURL ?? '#',
                     ], 201);
                 }
-
+    
                 throw new \Exception("Error creating payment: Payment creation failed. No payment ID received.");
+            } else {
+                // Offline payment: Assign roll numbers
+                $studentIds = $request->student_ids;
+                $this->assignRollNumbers($studentIds, $request->exam_id);
             }
-
+    
             DB::commit();
-
+    
             return response()->json([
-                'message' => 'Fee collected successfully.',
+                'message' => 'Fee collected successfully and roll numbers assigned.',
                 'data' => $feeCollection,
             ], 201);
-
+    
         } catch (\Exception $e) {
             DB::rollBack();
-
+    
             return response()->json([
                 'message' => 'Failed to collect fee.',
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
+    
 
     public function bkashExecutePayment($id, Request $request)
     {

@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Examiner;
-use Illuminate\Support\Facades\Http;
 
 class ExaminerController extends Controller
 {
