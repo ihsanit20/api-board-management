@@ -168,7 +168,7 @@ class FeeCollectionController extends Controller
                 ]);
     
                 $studentIds = json_decode($feeCollection->student_ids, true);
-                $this->assignRollNumbers($studentIds, $feeCollection->exam_id);
+                $this->assignRollNumbers($studentIds);
     
                 $institutePhone = $feeCollection->institute->phone ?? null;
                 $examName = $feeCollection->exam->name ?? '';
@@ -214,19 +214,20 @@ class FeeCollectionController extends Controller
         ], 200);
     }
 
-    private function assignRollNumbers(array $studentIds, $examId)
+    private function assignRollNumbers(array $studentIds)
     {
         foreach ($studentIds as $studentId) {
             $student = Student::find($studentId);
     
             if (!$student->roll_number) {
                 $previousMaxRollNumber = Student::query()
-                    ->where('exam_id', $examId)
+                    ->where('exam_id', $student->exam_id)
+                    ->where('zamat_id', $student->zamat_id)
                     ->max('roll_number');
     
                 $student->roll_number = $previousMaxRollNumber
                     ? $previousMaxRollNumber + 1
-                    : $examId . "0001";
+                    : $student->exam_id . $student->zamat_id . "0001";
                 $student->save();
             }
         }
