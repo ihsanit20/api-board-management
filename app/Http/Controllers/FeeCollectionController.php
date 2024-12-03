@@ -19,41 +19,77 @@ class FeeCollectionController extends Controller
             'institute:id,name,institute_code', 
             'zamat:id,name'
         ]);
-
-        if ($request->has('institute_id')) {
-            $query->where('institute_id', $request->institute_id);
+    
+        $query->when(true, function ($q) {
+            $q->where(function ($subQuery) {
+                $subQuery->where('payment_method', '!=', 'online')
+                         ->orWhere(function ($subSubQuery) {
+                             $subSubQuery->where('payment_method', 'online')
+                                         ->whereNotNull('transaction_id');
+                         });
+            });
+        });
+    
+        if ($request->has('institute_code')) {
+            $query->whereHas('institute', function ($q) use ($request) {
+                $q->where('institute_code', $request->institute_code);
+            });
         }
-
+    
         if ($request->has('zamat_id')) {
             $query->where('zamat_id', $request->zamat_id);
         }
-
+    
         if ($request->has('exam_id')) {
             $query->where('exam_id', $request->exam_id);
         }
-
+    
         if ($request->has('payment_method')) {
             $query->where('payment_method', $request->payment_method);
         }
-
+    
         if ($request->has('date_from') && $request->has('date_to')) {
             $query->whereBetween('created_at', [$request->date_from, $request->date_to]);
         }
 
-        // Add condition for payment_method "online" with transaction_id
-        if ($request->has('payment_method') && $request->payment_method === 'online') {
-            $query->whereNotNull('transaction_id');
+        if ($request->has('transaction_id')) {
+            $query->where('transaction_id', $request->transaction_id);
         }
-
-        // Fetch all data without pagination
+    
         $feeCollections = $query->orderBy('created_at', 'desc')->get();
-
+    
         return response()->json([
             'message' => 'Fee collection list retrieved successfully.',
             'data' => $feeCollections,
         ], 200);
     }
     
+    public function show($id)
+    {
+        try {
+            $feeCollection = CollectFee::with([
+                'institute:id,name,institute_code,phone', 
+                'zamat:id,name'
+            ])->findOrFail($id);
+
+            $studentIds = json_decode($feeCollection->student_ids, true);
+            $students = Student::whereIn('id', $studentIds)->get(['id', 'name', 'roll_number', 'registration_number']);
+
+            return response()->json([
+                'message' => 'Fee collection details retrieved successfully.',
+                'data' => [
+                    'feeCollection' => $feeCollection,
+                    'students' => $students
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to retrieve fee collection details.',
+                'error' => $e->getMessage(),
+            ], 404);
+        }
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -96,7 +132,6 @@ class FeeCollectionController extends Controller
     
                 throw new \Exception("Error creating payment: Payment creation failed. No payment ID received.");
             } else {
-                // Offline payment: Assign roll numbers
                 $studentIds = $request->student_ids;
                 $this->assignRollNumbers($studentIds, $request->exam_id);
             }
@@ -118,7 +153,6 @@ class FeeCollectionController extends Controller
         }
     }
     
-
     public function bkashExecutePayment($id, Request $request)
     {
         $paymentID = $request->input('paymentID');

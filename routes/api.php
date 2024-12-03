@@ -125,6 +125,7 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
     Route::get('/sms-logs/count', [SmsController::class, 'count']);
 
     Route::get('/collect-fees', [FeeCollectionController::class, 'index']);
+    Route::get('/collect-fees/{id}', [FeeCollectionController::class, 'show']);
 
     Route::middleware('role:Admin,Super Admin,Developer')->group(function () {  
         Route::post('/institutes', [InstituteController::class, 'store']);
