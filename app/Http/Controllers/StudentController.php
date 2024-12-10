@@ -14,7 +14,7 @@ class StudentController extends Controller
     public function index(Request $request)
     {
         $lastExam = Exam::latest()->first();
-    
+
         $query = Student::with([
             'exam:id,name',
             'zamat:id,name',
@@ -23,7 +23,7 @@ class StudentController extends Controller
             'center:id,name,institute_code',
             'group:id,name'
         ]);
-    
+
         if ($request->has('registration_number') && $request->registration_number) {
             $query->where('registration_number', $request->registration_number);
         }
@@ -31,17 +31,17 @@ class StudentController extends Controller
         if ($request->has('application_id') && $request->application_id) {
             $query->where('application_id', $request->application_id);
         }
-    
+
         if ($request->has('institute_code') && $request->institute_code) {
             $query->whereHas('institute', function ($q) use ($request) {
                 $q->where('institute_code', $request->institute_code);
             });
         }
-    
+
         if ($request->has('zamat_id') && $request->zamat_id) {
             $query->where('zamat_id', $request->zamat_id);
         }
-    
+
         if ($request->has('exam_id') && $request->exam_id) {
             $query->where('exam_id', $request->exam_id);
         } else {
@@ -49,9 +49,9 @@ class StudentController extends Controller
                 $query->where('exam_id', $lastExam->id);
             }
         }
-    
+
         $students = $query->get();
-    
+
         return response()->json($students);
     }
 
@@ -69,22 +69,22 @@ class StudentController extends Controller
         if ($request->has('application_id') && $request->application_id) {
             $query->where('application_id', $request->application_id);
         }
-    
+
         if ($request->has('institute_code') && $request->institute_code) {
             $query->whereHas('institute', function ($q) use ($request) {
                 $q->where('institute_code', $request->institute_code);
             });
         }
-    
+
         if ($request->has('zamat_id') && $request->zamat_id) {
             $query->where('zamat_id', $request->zamat_id);
         }
-    
+
         $students = $query->get();
-    
+
         return response()->json($students);
     }
-    
+
     public function show($id)
     {
         $student = Student::with([
@@ -151,15 +151,15 @@ class StudentController extends Controller
                     ]
                 ];
             });
-    
+
         return response()->json($data);
     }
 
     public function PrintEnvelop(Request $request)
     {
-        $areaName = $request->input('area_name'); 
+        $areaName = $request->input('area_name');
         $instituteCode = $request->input('institute_code');
-    
+
         $query = DB::table('students')
             ->join('institutes', 'students.institute_id', '=', 'institutes.id')
             ->join('areas', 'institutes.area_id', '=', 'areas.id')
@@ -173,7 +173,7 @@ class StudentController extends Controller
                 DB::raw('COUNT(students.id) as student_count')
             )
             ->groupBy('areas.name', 'institutes.name', 'institutes.institute_code', 'institutes.phone', 'zamats.name');
-    
+
 
         if ($areaName) {
             $query->where('areas.name', $areaName);
@@ -182,7 +182,7 @@ class StudentController extends Controller
         if ($instituteCode) {
             $query->where('institutes.institute_code', $instituteCode);
         }
-    
+
         $data = $query->get()
             ->groupBy('area_name')
             ->map(function ($area) {
@@ -201,10 +201,10 @@ class StudentController extends Controller
                     ];
                 })->values();
             });
-    
+
         return response()->json($data);
     }
-      
+
     public function studentsWithoutRollNumber(Request $request)
     {
         $institute = Institute::query()
@@ -225,7 +225,7 @@ class StudentController extends Controller
             )
             ->with('department:id,name')
             ->findOrFail($request->zamat_id);
-        
+
         // return
         $students = Student::query()
             ->select(
@@ -239,14 +239,14 @@ class StudentController extends Controller
             ->where('zamat_id', $zamat->id)
             ->whereNull('roll_number')
             ->get();
-    
+
         return response()->json([
             'students' => $students,
             'institute' => $institute,
             'zamat' => $zamat,
         ]);
     }
-    
+
     public function studentsWithRollNumber(Request $request)
     {
         $institute = Institute::query()
@@ -263,7 +263,7 @@ class StudentController extends Controller
             ->select('id', 'name', 'registration_number', 'father_name', 'date_of_birth', 'roll_number')
             ->where('institute_id', $institute->id)
             ->where('zamat_id', $zamat->id)
-            ->whereNotNull('roll_number') 
+            ->whereNotNull('roll_number')
             ->get();
 
         return response()->json([
@@ -271,6 +271,36 @@ class StudentController extends Controller
             'institute' => $institute,
             'zamat' => $zamat,
         ]);
+    }
+
+    public function studentsAdmitCard(Request $request)
+    {
+        $query = Student::with([
+            'exam:id,name',
+            'zamat:id,name,department_id',
+            'zamat.department:id,name',
+            'institute:id,name,institute_code',
+            'center:id,name,institute_code',
+            'group:id,name'
+        ])->whereNotNull('roll_number'); 
+
+        if ($request->has('institute_code') && $request->institute_code) {
+            $query->whereHas('institute', function ($q) use ($request) {
+                $q->where('institute_code', $request->institute_code);
+            });
+        }
+
+        if ($request->has('zamat_id') && $request->zamat_id) {
+            $query->where('zamat_id', $request->zamat_id);
+        }
+
+        if ($request->has('roll_number') && $request->roll_number) {
+            $query->where('roll_number', $request->roll_number);
+        }
+
+        $students = $query->get();
+
+        return response()->json($students);
     }
 
 }

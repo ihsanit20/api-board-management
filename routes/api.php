@@ -4,7 +4,7 @@ use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CenterController;
-use App\Http\Controllers\DepartmentController; 
+use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExaminerController;
 use App\Http\Controllers\FeeCollectionController;
@@ -66,22 +66,22 @@ Route::get('/fees', [FeeController::class, 'index']);
 Route::get('/fees/latest', [FeeController::class, 'latestFee']);
 Route::get('/fees/{id}', [FeeController::class, 'show']);
 
-Route::get('/groups', [GroupController::class, 'index']); 
+Route::get('/groups', [GroupController::class, 'index']);
 Route::get('/groups/{id}', [GroupController::class, 'show']);
 
-Route::get('/centers', [CenterController::class, 'index']); 
+Route::get('/centers', [CenterController::class, 'index']);
 Route::get('/centers/{id}', [CenterController::class, 'show']);
 
-Route::get('/students', [StudentController::class, 'index']); 
-Route::get('/students-print', [StudentController::class, 'PrintStudents']); 
+Route::get('/students', [StudentController::class, 'index']);
+Route::get('/students-print', [StudentController::class, 'PrintStudents']);
 Route::get('/students-count-center', [StudentController::class, 'centerWiseStudentCount']);
-Route::get('/print-envelop', [StudentController::class, 'PrintEnvelop']); 
+Route::get('/print-envelop', [StudentController::class, 'PrintEnvelop']);
 Route::get('/students/{id}', [StudentController::class, 'show']);
 Route::get('/without-roll-number', [StudentController::class, 'studentsWithoutRollNumber']);
 Route::get('/with-roll-number', [StudentController::class, 'studentsWithRollNumber']);
 
 
-Route::get('/notices', [NoticeController::class, 'index']); 
+Route::get('/notices', [NoticeController::class, 'index']);
 Route::get('/notices/{id}', [NoticeController::class, 'show']);
 
 Route::get('/examiners', [ExaminerController::class, 'index']);
@@ -115,11 +115,11 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
 
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/{user}', [UserController::class, 'show']);
-    Route::get('/applications', [ApplicationController::class, 'index']); 
+    Route::get('/applications', [ApplicationController::class, 'index']);
     Route::get('/applications/print', [ApplicationController::class, 'printApplications']);
     Route::get('/application-counts', [ApplicationController::class, 'getApplicationCounts']);
-    Route::get('/applications/zamat-wise-counts', [ApplicationController::class, 'getZamatWiseCounts']);   
-    Route::get('/applications/user-wise-counts', [ApplicationController::class, 'getUserWiseCounts']);   
+    Route::get('/applications/zamat-wise-counts', [ApplicationController::class, 'getZamatWiseCounts']);
+    Route::get('/applications/user-wise-counts', [ApplicationController::class, 'getUserWiseCounts']);
     Route::get('/applications/{id}', [ApplicationController::class, 'show']);
     Route::get('/sms-logs', [SmsController::class, 'index']);
     Route::get('/sms-logs/count', [SmsController::class, 'count']);
@@ -127,15 +127,17 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
     Route::get('/collect-fees', [FeeCollectionController::class, 'index']);
     Route::get('/collect-fees/{id}', [FeeCollectionController::class, 'show']);
 
-    Route::middleware('role:Admin,Super Admin,Developer')->group(function () {  
+    Route::get('/admit-card', [StudentController::class, 'studentsAdmitCard']);
+
+    Route::middleware('role:Admin,Super Admin,Developer')->group(function () {
         Route::post('/institutes', [InstituteController::class, 'store']);
         Route::put('/institutes/{id}', [InstituteController::class, 'update']);
         Route::post('/departments', [DepartmentController::class, 'store']);
         Route::post('/centers', [CenterController::class, 'store']);
 
         Route::post('/notices', [NoticeController::class, 'store']);
-        Route::put('/notices/{id}', [NoticeController::class, 'update']); 
-        
+        Route::put('/notices/{id}', [NoticeController::class, 'update']);
+
         Route::put('/applications/{id}/update-payment-status', [ApplicationController::class, 'updatePaymentStatus']);
         Route::put('/applications/{id}/update-registration', [ApplicationController::class, 'updateRegistrationPart']);
         Route::put('/applications/{id}/update-students', [ApplicationController::class, 'updateStudentsPart']);
@@ -154,15 +156,15 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::patch('/users/{user}', [UserController::class, 'update']);
         Route::delete('/users/{user}', [UserController::class, 'destroy']);
 
-        Route::put('/students/{id}', [StudentController::class, 'update']); 
-        
+        Route::put('/students/{id}', [StudentController::class, 'update']);
+
         Route::put('/site-settings/scrolling-notice', [SiteSettingsController::class, 'updateScrollingNotice']);
         Route::put('/site-settings/director-message', [SiteSettingsController::class, 'updateDirectorMessage']);
         Route::put('/site-settings/secretary-message', [SiteSettingsController::class, 'updateSecretaryMessage']);
-        Route::put('/site-settings/about-us', [SiteSettingsController::class, 'updateAboutUs']);        
-       
+        Route::put('/site-settings/about-us', [SiteSettingsController::class, 'updateAboutUs']);
+
         Route::delete('/institutes/{id}', [InstituteController::class, 'destroy']);
-        
+
         Route::post('/zamats', [ZamatController::class, 'store']);
         Route::post('/exams', [ExamController::class, 'store']);
         Route::post('/areas', [AreaController::class, 'store']);
