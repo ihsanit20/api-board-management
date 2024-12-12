@@ -11,6 +11,11 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
+
+        if (User::count()) {
+            return response()->json(['message' => 'Admin already registered.'], 403);
+        }
+
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:255|unique:users',
@@ -30,47 +35,42 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        // Validate phone and password
         $credentials = $request->validate([
             'phone' => 'required|string',
             'password' => 'required|string',
         ]);
-    
-        // Attempt login with credentials
+
         if (!Auth::attempt($credentials)) {
             return response()->json(['message' => 'Your phone or password is incorrect'], 401);
         }
-    
-        // Check if the user is active
+
         $user = Auth::user();
         if (!$user->is_active) {
             return response()->json(['message' => 'Your account is inactive. Please contact support.'], 401);
         }
-    
-        // Generate token if user is active
+
         $token = $user->createToken('auth_token')->plainTextToken;
-    
+
         return response()->json([
             'token' => $token,
             'user' => $user,
         ]);
     }
-    
+
 
     public function checkPhone(Request $request)
     {
         $request->validate([
-            'phone' => 'required|string', // You may add additional validation rules here
+            'phone' => 'required|string',
         ]);
 
         $phone = $request->input('phone');
 
-        // Check if the phone number exists in the database
         $isRegistered = User::where('phone', $phone)->exists();
 
         return response()->json(['isRegistered' => $isRegistered]);
     }
-    
+
     public function changePassword(Request $request)
     {
         $request->validate([
@@ -93,21 +93,21 @@ class AuthController extends Controller
     public function updateProfile(Request $request)
     {
         $user = auth()->user();
-    
+
         $request->validate([
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:255',
             'email' => 'nullable|email|unique:users,email,' . $user->id,
             'address' => 'nullable|string|max:255',
         ]);
-    
+
         $user->name = $request->name;
         $user->phone = $request->phone;
         $user->email = $request->email;
         $user->address = $request->address;
-    
+
         $user->save();
-    
+
         return response()->json(['user' => $user], 200);
     }
 

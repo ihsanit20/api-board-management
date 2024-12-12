@@ -146,6 +146,8 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::put('letter-distribution-centers/{id}', [LetterDistributionCenterController::class, 'update']);
 
         Route::put('/examiners/{id}', [ExaminerController::class, 'update']);
+
+        Route::put('/students/update/{id}', [StudentController::class, 'update']);
     });
 
     Route::middleware('role:Super Admin,Developer')->group(function () {
@@ -156,7 +158,6 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::patch('/users/{user}', [UserController::class, 'update']);
         Route::delete('/users/{user}', [UserController::class, 'destroy']);
 
-        Route::put('/students/{id}', [StudentController::class, 'update']);
 
         Route::put('/site-settings/scrolling-notice', [SiteSettingsController::class, 'updateScrollingNotice']);
         Route::put('/site-settings/director-message', [SiteSettingsController::class, 'updateDirectorMessage']);

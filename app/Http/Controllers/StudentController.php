@@ -108,6 +108,8 @@ class StudentController extends Controller
             'father_name' => 'sometimes|required|string|max:255',
             'date_of_birth' => 'sometimes|required|date|before:today',
             'address' => 'nullable|string|max:255',
+            'zamat_id' => 'sometimes|required|exists:zamats,id',
+            'para' => 'nullable|string|max:255',
         ]);
 
         try {
@@ -116,6 +118,8 @@ class StudentController extends Controller
                 'father_name' => $request->father_name,
                 'date_of_birth' => $request->date_of_birth,
                 'address' => $request->address,
+                'zamat_id' => $request->zamat_id,
+                'para' => $request->para,
             ]);
 
             return response()->json(['message' => 'Student updated successfully', 'student' => $student]);
@@ -282,7 +286,7 @@ class StudentController extends Controller
             'institute:id,name,institute_code',
             'center:id,name,institute_code',
             'group:id,name'
-        ])->whereNotNull('roll_number'); 
+        ])->whereNotNull('roll_number');
 
         if ($request->has('institute_code') && $request->institute_code) {
             $query->whereHas('institute', function ($q) use ($request) {

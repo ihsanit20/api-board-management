@@ -26,17 +26,15 @@ class UserController extends Controller
             'password' => 'required|string|min:6|confirmed',
             'role' => 'required|string',
             'address' => 'nullable|string|max:255',
-            'photo' => 'nullable|image|max:2048', // optional profile photo
-            'is_active' => 'boolean', // is_active ফিল্ড যোগ করা হয়েছে
+            'photo' => 'nullable|image|max:2048',
+            'is_active' => 'boolean',
         ]);
 
-        // Image upload handling
         $photoPath = null;
         if ($request->hasFile('photo')) {
             $photoPath = $request->file('photo')->store('user_photos', 'public');
         }
 
-        // নতুন ইউজার তৈরি
         $user = User::create([
             'name' => $request->name,
             'phone' => $request->phone,
@@ -45,19 +43,17 @@ class UserController extends Controller
             'role' => $request->role,
             'address' => $request->address,
             'photo' => $photoPath,
-            'is_active' => $request->has('is_active') ? $request->is_active : true, // ডিফল্টভাবে true
+            'is_active' => $request->has('is_active') ? $request->is_active : true,
         ]);
 
         return response()->json(['message' => 'User created successfully.', 'user' => $user], 201);
     }
 
-    // ৩. Display the specified user (GET /api/users/{id})
     public function show(User $user)
     {
-        return response()->json($user, 200); // নির্দিষ্ট ইউজারের ডাটা JSON ফরম্যাটে রিটার্ন করবে
+        return response()->json($user, 200);
     }
 
-    // ৪. Update the specified user in the database (PUT /api/users/{id})
     public function update(Request $request, User $user)
     {
         $request->validate([
@@ -67,17 +63,15 @@ class UserController extends Controller
             'password' => 'nullable|string|min:6|confirmed',
             'role' => 'required|string',
             'address' => 'nullable|string|max:255',
-            'photo' => 'nullable|image|max:2048', 
-            'is_active' => 'boolean', 
+            'photo' => 'nullable|image|max:2048',
+            'is_active' => 'boolean',
         ]);
-    
-        // Image upload handling
+
         $photoPath = $user->photo;
         if ($request->hasFile('photo')) {
             $photoPath = $request->file('photo')->store('user_photos', 'public');
         }
-    
-        // Update the user
+
         $user->update([
             'name' => $request->name,
             'phone' => $request->phone,
@@ -86,17 +80,17 @@ class UserController extends Controller
             'role' => $request->role,
             'address' => $request->address,
             'photo' => $photoPath,
-            'is_active' => $request->has('is_active') ? $request->is_active : $user->is_active, 
+            'is_active' => $request->has('is_active') ? $request->is_active : $user->is_active,
         ]);
 
         if (!$user->is_active && Auth::id() === $user->id) {
-            Auth::logout(); 
+            Auth::logout();
             return response()->json(['message' => 'You have been logged out as your account is now inactive.'], 200);
         }
-    
+
         return response()->json(['message' => 'User updated successfully.', 'user' => $user], 200);
     }
-    
+
 
     // ৫. Remove the specified user from the database (DELETE /api/users/{id})
     public function destroy(User $user)
