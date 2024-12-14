@@ -307,4 +307,46 @@ class StudentController extends Controller
         return response()->json($students);
     }
 
+    public function MultipleUpdate(Request $request)
+    {
+        $request->validate([
+            'institute_code' => 'required|string|exists:institutes,institute_code',
+            'zamat_id' => 'nullable|exists:zamats,id',
+            'updates' => 'required|array',
+            'updates.center_id' => 'nullable|exists:centers,id',
+        ]);
+
+        $studentsQuery = Student::query()
+            ->whereHas('institute', function ($q) use ($request) {
+                $q->where('institute_code', $request->institute_code);
+            });
+
+        if ($request->zamat_id) {
+            $studentsQuery->where('zamat_id', $request->zamat_id);
+        }
+
+        $students = $studentsQuery->get();
+
+        if ($students->isEmpty()) {
+            return response()->json(['message' => 'No students found for the given criteria'], 404);
+        }
+
+        $updates = $request->input('updates');
+        try {
+            foreach ($students as $student) {
+                $student->update($updates);
+            }
+
+            return response()->json([
+                'message' => 'Students updated successfully',
+                'updated_count' => $students->count(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to update students',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 }

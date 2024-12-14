@@ -206,8 +206,6 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
     });
 
     Route::middleware('role:Developer')->group(function () {
-        Route::get('/developer-special', function () {
-            return 'Developer-specific action';
-        });
+        Route::post('/students/multiple-update', [StudentController::class, 'multipleUpdate']);
     });
 });
