@@ -148,6 +148,8 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::put('/examiners/{id}', [ExaminerController::class, 'update']);
 
         Route::put('/students/update/{id}', [StudentController::class, 'update']);
+
+        Route::post('/students/multiple-update', [StudentController::class, 'multipleUpdate']);
     });
 
     Route::middleware('role:Super Admin,Developer')->group(function () {
@@ -206,6 +208,6 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
     });
 
     Route::middleware('role:Developer')->group(function () {
-        Route::post('/students/multiple-update', [StudentController::class, 'multipleUpdate']);
+
     });
 });

@@ -310,43 +310,32 @@ class StudentController extends Controller
     public function MultipleUpdate(Request $request)
     {
         $request->validate([
-            'institute_code' => 'required|string|exists:institutes,institute_code',
-            'zamat_id' => 'nullable|exists:zamats,id',
-            'updates' => 'required|array',
-            'updates.center_id' => 'nullable|exists:centers,id',
+            'institute_code'    => 'required|string|exists:institutes,institute_code',
+            'zamat_id'          => 'required|exists:zamats,id',
+            'new_center_id'     => 'required|exists:institutes,id',
         ]);
 
-        $studentsQuery = Student::query()
-            ->whereHas('institute', function ($q) use ($request) {
-                $q->where('institute_code', $request->institute_code);
-            });
+        $last_exam = Exam::latest()->first();
 
-        if ($request->zamat_id) {
-            $studentsQuery->where('zamat_id', $request->zamat_id);
+        $center_exists = Institute::query()
+            ->where('id', $request->new_center_id)
+            ->where('is_center', 1)
+            ->exists();
+
+        if($center_exists) {
+            $students = Student::query()
+                ->where('exam_id', $last_exam->id)
+                ->where('zamat_id', $request->zamat_id)
+                ->whereHas('institute', function ($q) use ($request) {
+                    $q->where('institute_code', $request->institute_code);
+                })
+                ->update([
+                    'center_id' => $request->new_center_id,
+                ]);
         }
 
-        $students = $studentsQuery->get();
-
-        if ($students->isEmpty()) {
-            return response()->json(['message' => 'No students found for the given criteria'], 404);
-        }
-
-        $updates = $request->input('updates');
-        try {
-            foreach ($students as $student) {
-                $student->update($updates);
-            }
-
-            return response()->json([
-                'message' => 'Students updated successfully',
-                'updated_count' => $students->count(),
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to update students',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'is_success' => (boolean) ($students ?? false)
+        ]);
     }
-
 }
