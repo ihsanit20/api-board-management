@@ -143,7 +143,11 @@ class StudentController extends Controller
 
     public function centerWiseStudentCount()
     {
-        $data = Student::with(['center', 'zamat'])
+        $lastExam = Exam::latest()->first();
+
+        $data = Student::query()
+            ->with(['center', 'zamat'])
+            ->where('exam_id', $lastExam->id)
             ->select('center_id', 'zamat_id', DB::raw('COUNT(id) as student_count'))
             ->groupBy('center_id', 'zamat_id')
             ->get()
@@ -153,6 +157,55 @@ class StudentController extends Controller
                         'zamat_name' => optional($item->zamat)->name,
                         'student_count' => $item->student_count
                     ]
+                ];
+            });
+
+        return response()->json($data);
+    }
+
+    public function centerWiseInstituteCount()
+    {
+        $lastExam = Exam::latest()->first();
+
+        $data = Student::with(['center', 'zamat', 'institute'])
+            ->select(
+                'center_id',
+                'zamat_id',
+                'institute_id',
+                DB::raw('COUNT(id) as student_count')
+            )
+            ->whereNotNull('roll_number')
+            ->where('exam_id', $lastExam->id)
+            ->groupBy('center_id', 'zamat_id', 'institute_id')
+            ->get()
+            ->groupBy('center_id')
+            ->map(function ($centerGroup) {
+                $centerName = optional($centerGroup->first()->center)->name;
+                $zamatCounts = $centerGroup->groupBy('zamat_id')->map(function ($zamatGroup, $zamatId) {
+                    $zamatName = optional($zamatGroup->first()->zamat)->name;
+                    return [
+                        'zamat_name' => $zamatName,
+                        'student_count' => $zamatGroup->sum('student_count')
+                    ];
+                });
+                $instituteCounts = $centerGroup->groupBy('institute_id')->map(function ($instituteGroup) {
+                    return [
+                        'institute_name' => optional($instituteGroup->first()->institute)->name,
+                        'zamats' => $instituteGroup->groupBy('zamat_id')->map(function ($zamatGroup, $zamatId) {
+                            $zamatName = optional($zamatGroup->first()->zamat)->name;
+                            return [
+                                'zamat_name' => $zamatName,
+                                'student_count' => $zamatGroup->sum('student_count')
+                            ];
+                        })
+                    ];
+                });
+
+                return [
+                    'center' => $centerName,
+                    'zamats' => $zamatCounts,
+                    'Total' => $centerGroup->sum('student_count'),
+                    'institutes' => $instituteCounts
                 ];
             });
 

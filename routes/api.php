@@ -80,6 +80,8 @@ Route::get('/students/{id}', [StudentController::class, 'show']);
 Route::get('/without-roll-number', [StudentController::class, 'studentsWithoutRollNumber']);
 Route::get('/with-roll-number', [StudentController::class, 'studentsWithRollNumber']);
 
+Route::get('/center-wise-institute-count', [StudentController::class, 'centerWiseInstituteCount']);
+
 
 Route::get('/notices', [NoticeController::class, 'index']);
 Route::get('/notices/{id}', [NoticeController::class, 'show']);
@@ -128,6 +130,8 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
     Route::get('/collect-fees/{id}', [FeeCollectionController::class, 'show']);
 
     Route::get('/admit-card', [StudentController::class, 'studentsAdmitCard']);
+
+
 
     Route::middleware('role:Admin,Super Admin,Developer')->group(function () {
         Route::post('/institutes', [InstituteController::class, 'store']);
