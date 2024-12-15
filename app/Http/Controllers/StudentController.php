@@ -191,6 +191,7 @@ class StudentController extends Controller
                 $instituteCounts = $centerGroup->groupBy('institute_id')->map(function ($instituteGroup) {
                     return [
                         'institute_name' => optional($instituteGroup->first()->institute)->name,
+                        'institute_code' => optional($instituteGroup->first()->institute)->institute_code,
                         'zamats' => $instituteGroup->groupBy('zamat_id')->map(function ($zamatGroup, $zamatId) {
                             $zamatName = optional($zamatGroup->first()->zamat)->name;
                             return [
