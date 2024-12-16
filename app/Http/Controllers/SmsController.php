@@ -27,18 +27,18 @@ class SmsController extends Controller
         $perPage = $request->query('per_page', 10);
         $smsRecords = SmsRecord::orderBy('created_at', 'desc')->paginate($perPage);
         return response()->json($smsRecords, 200);
-    }    
+    }
 
     public function count()
     {
-        $totalSmsParts = SmsLog::sum('sms_parts');
-    
+        $totalSmsParts = SmsRecord::sum('sms_count');
+
         return response()->json([
             'success' => true,
             'total' => $totalSmsParts,
         ]);
     }
-    
+
 
     public function sendSms(Request $request)
     {

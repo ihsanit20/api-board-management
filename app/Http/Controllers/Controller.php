@@ -26,7 +26,7 @@ class Controller extends BaseController
             ]);
 
             $status = $response->successful() ? 'sent' : 'failed';
-            
+
             $sms_parts = $this->countSmsLength($message);
 
             $numbers = explode(',', $number);
@@ -50,15 +50,15 @@ class Controller extends BaseController
     }
 
     function countSmsLength($message) {
-        $messageLength = strlen($message);
-    
-        if (preg_match('/^[\x00-\x7F]*$/', $message)) 
+        $messageLength = mb_strlen($message, 'UTF-8');
+
+        if (preg_match('/^[\x00-\x7F]*$/', $message))
         {
             $sms_count = $messageLength <= 160
                 ? 1
                 : ceil($messageLength / 153);
         }
-        else 
+        else
         {
             $sms_count = $messageLength <= 70
                 ? 1
@@ -67,4 +67,5 @@ class Controller extends BaseController
 
         return $sms_count;
     }
+
 }
