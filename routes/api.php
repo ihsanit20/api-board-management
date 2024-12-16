@@ -51,6 +51,8 @@ Route::get('/institutes-with-applications', [InstituteController::class, 'instit
 Route::get('/institutes-without-applications', [InstituteController::class, 'institutesWithoutApplications']);
 Route::get('/institutes/{id}', [InstituteController::class, 'show']);
 Route::get('/institute-by-code/{institute_code}', [InstituteController::class, 'instituteByCode']);
+Route::get('/institutes-with-phone', [InstituteController::class, 'institutesWithValidPhone']);
+Route::get('/centers-with-phone', [InstituteController::class, 'institutesWithValidPhoneAndCenter']);
 
 Route::get('/zamats', [ZamatController::class, 'index']);
 Route::get('/zamats/{id}', [ZamatController::class, 'show']);

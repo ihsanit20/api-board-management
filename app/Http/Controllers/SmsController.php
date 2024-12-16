@@ -32,12 +32,15 @@ class SmsController extends Controller
     public function count()
     {
         $totalSmsParts = SmsRecord::sum('sms_count');
+        $totalCost = SmsRecord::sum('cost');
 
         return response()->json([
             'success' => true,
-            'total' => $totalSmsParts,
+            'total_sms_parts' => $totalSmsParts,
+            'total_cost' => $totalCost, 
         ]);
     }
+
 
 
     public function sendSms(Request $request)

@@ -25,18 +25,21 @@ class Controller extends BaseController
                 'type'      => 'text'
             ]);
 
-            $status = $response->successful() ? 'sent' : 'failed';
+            $responseBody = json_decode($response->body(), true);
+
+            $status = (isset($responseBody['response_code']) && $responseBody['response_code'] === 202) ? 'sent' : 'failed';
 
             $sms_parts = $this->countSmsLength($message);
-
             $numbers = explode(',', $number);
+            $sms_count = $status === 'sent' ? count($numbers) * $sms_parts : 0;
+            $cost = $status === 'sent' ? count($numbers) * $sms_parts * $price_per_sms : 0;
 
             SmsRecord::create([
                 'message'       => $message,
                 'sms_parts'     => $sms_parts,
-                'sms_count'     => count($numbers) * $sms_parts,
+                'sms_count'     => $sms_count,
                 'numbers'       => $numbers,
-                'cost'          => count($numbers) * $sms_parts * $price_per_sms,
+                'cost'          => $cost,
                 'event'         => $event,
                 'status'        => $status,
                 'institute_id'  => $institute_id,

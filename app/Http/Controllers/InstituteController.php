@@ -8,29 +8,29 @@ use Illuminate\Http\Request;
 
 class InstituteController extends Controller
 {
-    
+
     public function index(Request $request)
     {
         $query = Institute::query()
             ->with('area')
             ->oldest('institute_code');
-    
+
         if ($request->has('area_id')) {
             $query->where('area_id', $request->input('area_id'));
         }
-    
+
         if ($request->has('is_center')) {
             $query->where('is_center', $request->input('is_center'));
         }
-    
+
         if ($request->has('is_active')) {
             $query->where('is_active', $request->input('is_active'));
         }
-    
+
         $perPage = $request->input('per_page', 15); // Default per page is 15
-    
+
         // If 'all' is requested, return the full list
-        return $perPage === 'all' 
+        return $perPage === 'all'
             ? response()->json([
                 'data' => $query->get(),
                 'total' => $query->count(),
@@ -71,27 +71,62 @@ class InstituteController extends Controller
 
     public function institutesWithApplications()
     {
-        $institutesWithApplications = Institute::whereHas('applications')->get();
+        $institutesWithApplications = Institute::whereHas('applications')
+            ->whereNotNull('phone')
+            ->whereRaw('LENGTH(phone) = 11')
+            ->select('id', 'name', 'phone', 'institute_code')
+            ->oldest('institute_code')
+            ->get();
+
         return response()->json($institutesWithApplications);
     }
 
     public function institutesWithoutApplications()
     {
-        $institutesWithoutApplications = Institute::whereDoesntHave('applications')->get();
+        $institutesWithoutApplications = Institute::whereDoesntHave('applications')
+            ->whereNotNull('phone')
+            ->whereRaw('LENGTH(phone) = 11')
+            ->select('id', 'name', 'phone', 'institute_code')
+            ->oldest('institute_code')
+            ->get();
+
         return response()->json($institutesWithoutApplications);
+    }
+
+
+    public function institutesWithValidPhone()
+    {
+        $institutes = Institute::whereNotNull('phone')
+            // ->whereRaw('LENGTH(phone) = 11')
+            ->select('id', 'name', 'phone', 'institute_code')
+            ->oldest('institute_code')
+            ->get();
+        return response()->json($institutes);
+    }
+
+    public function institutesWithValidPhoneAndCenter()
+    {
+        $institutes = Institute::whereNotNull('phone')
+            ->whereRaw('LENGTH(phone) = 11')
+            ->where('is_center', true)
+            ->select('id', 'name', 'phone', 'institute_code')
+            ->oldest('institute_code')
+            ->get();
+
+        return response()->json($institutes);
     }
 
     public function institutesApplicationStatusCounts()
     {
         $institutesWithApplicationsCount = Institute::whereHas('applications')->count();
         $institutesWithoutApplicationsCount = Institute::whereDoesntHave('applications')->count();
-    
+
         return response()->json([
             'withApplications' => $institutesWithApplicationsCount,
             'withoutApplications' => $institutesWithoutApplicationsCount,
         ]);
-    }    
-   
+    }
+
     public function store(Request $request)
     {
         $validatedData = $request->validate([
