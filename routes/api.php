@@ -37,7 +37,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-
+Route::get('/students-roll-count', [StudentController::class, 'rollNumberCounts']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/departments', [DepartmentController::class, 'index']);
@@ -132,6 +132,7 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
     Route::get('/collect-fees/{id}', [FeeCollectionController::class, 'show']);
 
     Route::get('/admit-card', [StudentController::class, 'studentsAdmitCard']);
+
 
 
 

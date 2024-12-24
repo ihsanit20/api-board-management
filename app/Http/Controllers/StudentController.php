@@ -392,4 +392,25 @@ class StudentController extends Controller
             'is_success' => (boolean) ($students ?? false)
         ]);
     }
+
+    public function rollNumberCounts()
+    {
+        $studentsWithRollCount = Student::whereNotNull('roll_number')->count();
+        $institutesWithRollCount = Student::whereNotNull('roll_number')->distinct('institute_id')->count('institute_id');
+
+        $studentsWithoutRollCount = Student::whereNull('roll_number')->count();
+        $institutesWithoutRollCount = Student::whereNull('roll_number')->distinct('institute_id')->count('institute_id');
+
+        return response()->json([
+            'with_roll' => [
+                'student_count' => $studentsWithRollCount,
+                'institute_count' => $institutesWithRollCount,
+            ],
+            'without_roll' => [
+                'student_count' => $studentsWithoutRollCount,
+                'institute_count' => $institutesWithoutRollCount,
+            ],
+        ]);
+    }
+
 }
