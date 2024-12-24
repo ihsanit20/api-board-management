@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Institute extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = ['name', 'phone', 'area_id', 'institute_code', 'is_active', 'is_center'];
 
     protected $casts = [
@@ -27,6 +27,11 @@ class Institute extends Model
     public function applications()
     {
         return $this->hasMany(Application::class, 'institute_id', 'id');
+    }
+
+    public function students()
+    {
+        return $this->hasMany(Student::class, 'institute_id', 'id');
     }
 
 }

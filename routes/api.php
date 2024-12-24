@@ -37,7 +37,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::get('/students-roll-count', [StudentController::class, 'rollNumberCounts']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/departments', [DepartmentController::class, 'index']);
@@ -81,6 +80,10 @@ Route::get('/print-envelop', [StudentController::class, 'PrintEnvelop']);
 Route::get('/students/{id}', [StudentController::class, 'show']);
 Route::get('/without-roll-number', [StudentController::class, 'studentsWithoutRollNumber']);
 Route::get('/with-roll-number', [StudentController::class, 'studentsWithRollNumber']);
+
+Route::get('/students-roll-count', [StudentController::class, 'rollNumberCounts']);
+Route::get('/students-with-without-roll-count', [StudentController::class, 'withoutAndWithRollNumberCount']);
+
 
 Route::get('/center-wise-institute-count', [StudentController::class, 'centerWiseInstituteCount']);
 

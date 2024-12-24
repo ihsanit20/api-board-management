@@ -413,4 +413,53 @@ class StudentController extends Controller
         ]);
     }
 
+    public function withoutAndWithRollNumberCount()
+    {
+        // সর্বশেষ পরীক্ষার আইডি পাওয়া
+        $lastExam = Exam::latest()->first();
+
+        if (!$lastExam) {
+            return response()->json(['error' => 'No exam data found.'], 404);
+        }
+
+        $lastExamId = $lastExam->id;
+
+        // ইনস্টিটিউট ফিল্টার করা রোল নাম্বার সহ ও রোল নাম্বার ছাড়া শিক্ষার্থীদের উপর ভিত্তি করে
+        $institutes = Institute::query()
+            ->whereHas('students', function ($query) use ($lastExamId) {
+                $query->where('exam_id', $lastExamId);
+            })
+            ->with([
+                'students' => function ($query) use ($lastExamId) {
+                    $query->where('exam_id', $lastExamId)->select('id', 'institute_id', 'zamat_id', 'roll_number');
+                },
+                'students.zamat:id,name'
+            ])
+            ->get(['id', 'name', 'institute_code', 'phone']);
+
+        // ডেটা প্রসেস করা
+        $data = $institutes->map(function ($institute) {
+            $zamatGroups = $institute->students->groupBy('zamat_id')->map(function ($students, $zamatId) {
+                $studentsWithRoll = $students->whereNotNull('roll_number');
+                $studentsWithoutRoll = $students->whereNull('roll_number');
+
+                return [
+                    'zamat_name' => optional($students->first()->zamat)->name,
+                    'with_roll_count' => $studentsWithRoll->count(),
+                    'without_roll_count' => $studentsWithoutRoll->count(),
+                ];
+            });
+
+            return [
+                'institute_name' => $institute->name,
+                'institute_code' => $institute->institute_code,
+                'phone' => $institute->phone,
+                'zamat_details' => $zamatGroups->values(),
+            ];
+        });
+
+        return response()->json($data);
+    }
+
+
 }
