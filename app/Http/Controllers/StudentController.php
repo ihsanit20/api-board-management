@@ -480,6 +480,8 @@ class StudentController extends Controller
             ])
             ->select('area_id', 'zamat_id', DB::raw('COUNT(id) as student_count'))
             ->groupBy('area_id', 'zamat_id')
+            ->orderBy('area_id')  // এরিয়া আইডি অনুযায়ী সাজানো
+            ->orderBy('zamat_id') // জামাত আইডি অনুযায়ী সাজানো
             ->get()
             ->groupBy('area_id')
             ->map(function ($students, $areaId) {
@@ -496,5 +498,6 @@ class StudentController extends Controller
 
         return response()->json($data);
     }
+
 
 }
