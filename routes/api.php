@@ -84,9 +84,9 @@ Route::get('/with-roll-number', [StudentController::class, 'studentsWithRollNumb
 Route::get('/students-roll-count', [StudentController::class, 'rollNumberCounts']);
 Route::get('/students-with-without-roll-count', [StudentController::class, 'withoutAndWithRollNumberCount']);
 
-
 Route::get('/center-wise-institute-count', [StudentController::class, 'centerWiseInstituteCount']);
 
+Route::get('/area-wise-student-count', [StudentController::class, 'areaWiseStudentCountByZamat']);
 
 Route::get('/notices', [NoticeController::class, 'index']);
 Route::get('/notices/{id}', [NoticeController::class, 'show']);

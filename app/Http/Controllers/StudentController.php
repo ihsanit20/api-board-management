@@ -461,5 +461,40 @@ class StudentController extends Controller
         return response()->json($data);
     }
 
+    public function areaWiseStudentCountByZamat()
+    {
+        $lastExam = Exam::latest()->first();
+
+        if (!$lastExam) {
+            return response()->json(['error' => 'No exam data found.'], 404);
+        }
+
+        $lastExamId = $lastExam->id;
+
+        $data = Student::query()
+            ->where('exam_id', $lastExamId)
+            ->whereNotNull('roll_number')
+            ->with([
+                'area:id,name',
+                'zamat:id,name'
+            ])
+            ->select('area_id', 'zamat_id', DB::raw('COUNT(id) as student_count'))
+            ->groupBy('area_id', 'zamat_id')
+            ->get()
+            ->groupBy('area_id')
+            ->map(function ($students, $areaId) {
+                return [
+                    'area_name' => optional($students->first()->area)->name,
+                    'zamats' => $students->map(function ($zamatGroup) {
+                        return [
+                            'zamat_name' => optional($zamatGroup->zamat)->name,
+                            'student_count' => $zamatGroup->student_count,
+                        ];
+                    })->values(),
+                ];
+            });
+
+        return response()->json($data);
+    }
 
 }
