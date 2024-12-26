@@ -480,13 +480,16 @@ class StudentController extends Controller
             ])
             ->select('area_id', 'zamat_id', DB::raw('COUNT(id) as student_count'))
             ->groupBy('area_id', 'zamat_id')
-            ->orderBy('area_id')  // এরিয়া আইডি অনুযায়ী সাজানো
-            ->orderBy('zamat_id') // জামাত আইডি অনুযায়ী সাজানো
+            ->orderBy('area_id')  
+            ->orderBy('zamat_id')
             ->get()
             ->groupBy('area_id')
-            ->map(function ($students, $areaId) {
+            ->map(function ($students) {
+                $totalStudentCount = $students->sum('student_count');
+
                 return [
                     'area_name' => optional($students->first()->area)->name,
+                    'total_student_count' => $totalStudentCount,
                     'zamats' => $students->map(function ($zamatGroup) {
                         return [
                             'zamat_name' => optional($zamatGroup->zamat)->name,
