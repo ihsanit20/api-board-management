@@ -10,11 +10,13 @@ class CreateExamSubjectsTable extends Migration
     {
         Schema::create('exam_subjects', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('exam_id')->constrained('exams')->onDelete('cascade');
-            $table->foreignId('subject_id')->constrained('subjects')->onDelete('cascade');
-            $table->integer('total_marks');
+            $table->foreignId('exam_id')->constrained('exams')->onDelete('restrict');
+            $table->foreignId('subject_id')->constrained('subjects')->onDelete('restrict');
+            $table->integer('full_marks');
             $table->integer('pass_marks');
             $table->timestamps();
+
+            $table->unique(['exam_id', 'subject_id'], 'unique_exam_subject');
         });
     }
 
@@ -23,4 +25,3 @@ class CreateExamSubjectsTable extends Migration
         Schema::dropIfExists('exam_subjects');
     }
 }
-
