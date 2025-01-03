@@ -7,6 +7,7 @@ use App\Http\Controllers\CenterController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExaminerController;
+use App\Http\Controllers\ExamSubjectController;
 use App\Http\Controllers\FeeCollectionController;
 use App\Http\Controllers\FeeController;
 use App\Http\Controllers\GroupController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\SiteSettingsController;
 use App\Http\Controllers\SmsController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ZamatController;
 use App\Models\LetterDistributionCenter;
@@ -111,12 +113,16 @@ Route::get('letter-distribution-centers', [LetterDistributionCenterController::c
 Route::get('/search-letter-center', [LetterDistributionCenterController::class, 'searchByInstituteCode']);
 Route::get('letter-distribution-centers/{id}', [LetterDistributionCenterController::class, 'show']);
 
-Route::prefix('site-settings')->group(function () {
-    Route::get('/scrolling-notice', [SiteSettingsController::class, 'showScrollingNotice']);
-    Route::get('/director-message', [SiteSettingsController::class, 'showDirectorMessage']);
-    Route::get('/secretary-message', [SiteSettingsController::class, 'showSecretaryMessage']);
-    Route::get('/about-us', [SiteSettingsController::class, 'showAboutUs']);
-});
+Route::get('/site-settings/scrolling-notice', [SiteSettingsController::class, 'showScrollingNotice']);
+Route::get('/site-settings/director-message', [SiteSettingsController::class, 'showDirectorMessage']);
+Route::get('/site-settings/secretary-message', [SiteSettingsController::class, 'showSecretaryMessage']);
+Route::get('/site-settings/about-us', [SiteSettingsController::class, 'showAboutUs']);
+
+Route::get('/subjects', [SubjectController::class, 'index']);
+Route::get('/subjects/{id}', [SubjectController::class, 'show']);
+
+Route::get('/exam-subjects', [ExamSubjectController::class, 'index']);
+Route::get('/exam-subjects/{id}', [ExamSubjectController::class, 'show']);
 
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 
@@ -135,9 +141,6 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
     Route::get('/collect-fees/{id}', [FeeCollectionController::class, 'show']);
 
     Route::get('/admit-card', [StudentController::class, 'studentsAdmitCard']);
-
-
-
 
     Route::middleware('role:Admin,Super Admin,Developer')->group(function () {
         Route::post('/institutes', [InstituteController::class, 'store']);
@@ -160,6 +163,12 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::put('/students/update/{id}', [StudentController::class, 'update']);
 
         Route::post('/students/multiple-update', [StudentController::class, 'multipleUpdate']);
+
+        Route::post('/subjects', [SubjectController::class, 'store']);
+        Route::put('/subjects/{id}', [SubjectController::class, 'update']);
+
+        Route::post('/exam-subjects', [ExamSubjectController::class, 'store']);
+        Route::put('/exam-subjects/{id}', [ExamSubjectController::class, 'update']);
     });
 
     Route::middleware('role:Super Admin,Developer')->group(function () {
@@ -169,7 +178,6 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::put('/users/{user}', [UserController::class, 'update']);
         Route::patch('/users/{user}', [UserController::class, 'update']);
         Route::delete('/users/{user}', [UserController::class, 'destroy']);
-
 
         Route::put('/site-settings/scrolling-notice', [SiteSettingsController::class, 'updateScrollingNotice']);
         Route::put('/site-settings/director-message', [SiteSettingsController::class, 'updateDirectorMessage']);
@@ -215,6 +223,10 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::delete('/examiners/{id}', [ExaminerController::class, 'destroy']);
 
         Route::delete('letter-distribution-centers/{id}', [LetterDistributionCenterController::class, 'destroy']);
+
+        Route::delete('/subjects/{id}', [SubjectController::class, 'destroy']);
+
+        Route::delete('/exam-subjects/{id}', [ExamSubjectController::class, 'destroy']);
     });
 
     Route::middleware('role:Developer')->group(function () {
