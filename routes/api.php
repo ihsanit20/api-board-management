@@ -14,6 +14,7 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\InstituteController;
 use App\Http\Controllers\LetterDistributionCenterController;
 use App\Http\Controllers\NoticeController;
+use App\Http\Controllers\QuranQuestionController;
 use App\Http\Controllers\SiteSettingsController;
 use App\Http\Controllers\SmsController;
 use App\Http\Controllers\StudentController;
@@ -124,6 +125,9 @@ Route::get('/subjects/{id}', [SubjectController::class, 'show']);
 Route::get('/exam-subjects', [ExamSubjectController::class, 'index']);
 Route::get('/exam-subjects/{id}', [ExamSubjectController::class, 'show']);
 
+Route::get('/quran-questions', [QuranQuestionController::class, 'index']);
+Route::get('/quran-questions/{id}', [QuranQuestionController::class, 'show']);
+
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 
     Route::get('/users', [UserController::class, 'index']);
@@ -141,6 +145,9 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
     Route::get('/collect-fees/{id}', [FeeCollectionController::class, 'show']);
 
     Route::get('/admit-card', [StudentController::class, 'studentsAdmitCard']);
+
+    Route::post('/quran-questions', [QuranQuestionController::class, 'store']);
+    Route::put('/quran-questions/{id}', [QuranQuestionController::class, 'update']);
 
     Route::middleware('role:Admin,Super Admin,Developer')->group(function () {
         Route::post('/institutes', [InstituteController::class, 'store']);
@@ -227,6 +234,8 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::delete('/subjects/{id}', [SubjectController::class, 'destroy']);
 
         Route::delete('/exam-subjects/{id}', [ExamSubjectController::class, 'destroy']);
+
+        Route::delete('/quran-questions/{id}', [QuranQuestionController::class, 'destroy']);
     });
 
     Route::middleware('role:Developer')->group(function () {
