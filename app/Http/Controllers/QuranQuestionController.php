@@ -39,21 +39,16 @@ class QuranQuestionController extends Controller
             'questions.*.page' => 'required|integer',
         ]);
 
-        foreach ($validatedData['questions'] as $question) {
-            QuranQuestion::create([
-                'exam_id' => $lastExamId,
-                'center_id' => $validatedData['center_id'],
-                'zamat_id' => $validatedData['zamat_id'],
-                'surah' => $question['surah'],
-                'verses' => $question['verses'],
-                'text' => $question['text'],
-                'page' => $question['page'],
-            ]);
-        }
+        // Save the data as JSON in the `questions` field
+        QuranQuestion::create([
+            'exam_id' => $lastExamId,
+            'center_id' => $validatedData['center_id'],
+            'zamat_id' => $validatedData['zamat_id'],
+            'questions' => $validatedData['questions'], // JSON data
+        ]);
 
         return response()->json(['message' => 'Questions saved successfully'], 201);
     }
-
 
     public function show($id)
     {
