@@ -20,4 +20,16 @@ class QuranQuestion extends Model
     protected $casts = [
         'questions' => 'array',
     ];
+
+    // Center সম্পর্ক
+    public function center()
+    {
+        return $this->belongsTo(Center::class, 'center_id', 'id');
+    }
+
+    // Zamat সম্পর্ক
+    public function zamat()
+    {
+        return $this->belongsTo(Zamat::class, 'zamat_id', 'id');
+    }
 }

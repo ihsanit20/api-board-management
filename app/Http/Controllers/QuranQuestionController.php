@@ -13,17 +13,21 @@ class QuranQuestionController extends Controller
         $centerId = $request->query('center_id');
         $zamatId = $request->query('zamat_id');
 
+        // Validate input
         if (!$centerId || !$zamatId) {
             return response()->json(['error' => 'center_id and zamat_id are required'], 400);
         }
 
-        $quranQuestions = QuranQuestion::where('exam_id', $lastExamId)
+        // Fetch Quran questions with related center and zamat data
+        $quranQuestions = QuranQuestion::with(['center.institute', 'zamat'])
+            ->where('exam_id', $lastExamId)
             ->where('center_id', $centerId)
             ->where('zamat_id', $zamatId)
             ->get();
 
         return response()->json($quranQuestions);
     }
+
 
     public function store(Request $request)
     {
@@ -39,12 +43,11 @@ class QuranQuestionController extends Controller
             'questions.*.page' => 'required|integer',
         ]);
 
-        // Save the data as JSON in the `questions` field
         QuranQuestion::create([
             'exam_id' => $lastExamId,
             'center_id' => $validatedData['center_id'],
             'zamat_id' => $validatedData['zamat_id'],
-            'questions' => $validatedData['questions'], // JSON data
+            'questions' => $validatedData['questions'],
         ]);
 
         return response()->json(['message' => 'Questions saved successfully'], 201);
