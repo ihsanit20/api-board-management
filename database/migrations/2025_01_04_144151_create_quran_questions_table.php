@@ -10,15 +10,15 @@ class CreateQuranQuestionsTable extends Migration
     {
         Schema::create('quran_questions', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('exam_id');
-            $table->unsignedBigInteger('center_id');
-            $table->unsignedBigInteger('zamat_id');
-            $table->json('questions');
+            $table->unsignedBigInteger('exam_id')->nullable();
+            $table->unsignedBigInteger('center_id')->nullable();
+            $table->unsignedBigInteger('zamat_id')->nullable();
+            $table->json('questions')->nullable();
             $table->timestamps();
 
-            $table->foreign('exam_id')->references('id')->on('exams')->onDelete('cascade');
-            $table->foreign('center_id')->references('id')->on('centers')->onDelete('cascade');
-            $table->foreign('zamat_id')->references('id')->on('zamats')->onDelete('cascade');
+            $table->foreign('exam_id')->references('id')->on('exams')->onDelete('restrict');
+            $table->foreign('center_id')->references('id')->on('institutes')->onDelete('restrict');
+            $table->foreign('zamat_id')->references('id')->on('zamats')->onDelete('restrict');
         });
     }
 

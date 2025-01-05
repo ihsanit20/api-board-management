@@ -7,20 +7,30 @@ use Illuminate\Http\Request;
 
 class QuranQuestionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $lastExamId = QuranQuestion::max('exam_id');
-        $quranQuestions = QuranQuestion::where('exam_id', $lastExamId)->get();
+        $centerId = $request->query('center_id');
+        $zamatId = $request->query('zamat_id');
+
+        if (!$centerId || !$zamatId) {
+            return response()->json(['error' => 'center_id and zamat_id are required'], 400);
+        }
+
+        $quranQuestions = QuranQuestion::where('exam_id', $lastExamId)
+            ->where('center_id', $centerId)
+            ->where('zamat_id', $zamatId)
+            ->get();
 
         return response()->json($quranQuestions);
     }
 
     public function store(Request $request)
     {
-        $lastExamId = QuranQuestion::max('exam_id');
+        $lastExamId = QuranQuestion::max('exam_id') ?? 22;
 
         $validatedData = $request->validate([
-            'center_id' => 'required|integer',
+            'center_id' => 'nullable|exists:institutes,id',
             'zamat_id' => 'required|integer',
             'questions' => 'required|array',
             'questions.*.surah' => 'required|integer',
@@ -29,12 +39,21 @@ class QuranQuestionController extends Controller
             'questions.*.page' => 'required|integer',
         ]);
 
-        $validatedData['exam_id'] = $lastExamId;
+        foreach ($validatedData['questions'] as $question) {
+            QuranQuestion::create([
+                'exam_id' => $lastExamId,
+                'center_id' => $validatedData['center_id'],
+                'zamat_id' => $validatedData['zamat_id'],
+                'surah' => $question['surah'],
+                'verses' => $question['verses'],
+                'text' => $question['text'],
+                'page' => $question['page'],
+            ]);
+        }
 
-        $quranQuestion = QuranQuestion::create($validatedData);
-
-        return response()->json($quranQuestion, 201);
+        return response()->json(['message' => 'Questions saved successfully'], 201);
     }
+
 
     public function show($id)
     {
@@ -56,7 +75,7 @@ class QuranQuestionController extends Controller
         }
 
         $validatedData = $request->validate([
-            'center_id' => 'sometimes|required|integer',
+            'center_id' => 'nullable|exists:institutes,id',
             'zamat_id' => 'sometimes|required|integer',
             'questions' => 'sometimes|required|array',
             'questions.*.surah' => 'sometimes|required|integer',
