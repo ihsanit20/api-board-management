@@ -12,8 +12,8 @@ class QuranQuestion extends Model
     protected $fillable = [
         'exam_id',
         'center_id',
-        'department_id',
         'zamat_id',
+        'para_group_id', // নতুন ফিল্ড যোগ করা হয়েছে
         'questions',
     ];
 
@@ -31,5 +31,11 @@ class QuranQuestion extends Model
     public function zamat()
     {
         return $this->belongsTo(Zamat::class, 'zamat_id', 'id');
+    }
+
+    // Para Group সম্পর্ক
+    public function paraGroup()
+    {
+        return $this->belongsTo(ParaGroup::class, 'para_group_id', 'id');
     }
 }

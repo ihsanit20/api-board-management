@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Exam;
 use App\Models\QuranQuestion;
 use Illuminate\Http\Request;
 
@@ -12,18 +13,22 @@ class QuranQuestionController extends Controller
         $lastExamId = QuranQuestion::max('exam_id');
         $centerId = $request->query('center_id');
         $zamatId = $request->query('zamat_id');
+        $paraGroupId = $request->query('para_group_id');
 
-        // Validate input
-        if (!$centerId || !$zamatId) {
-            return response()->json(['error' => 'center_id and zamat_id are required'], 400);
+        $query = QuranQuestion::with(['center.institute', 'zamat', 'paraGroup'])
+            ->where('exam_id', $lastExamId);
+
+        if ($centerId) {
+            $query->where('center_id', $centerId);
+        }
+        if ($zamatId) {
+            $query->where('zamat_id', $zamatId);
+        }
+        if ($paraGroupId) {
+            $query->where('para_group_id', $paraGroupId);
         }
 
-        // Fetch Quran questions with related center and zamat data
-        $quranQuestions = QuranQuestion::with(['center.institute', 'zamat'])
-            ->where('exam_id', $lastExamId)
-            ->where('center_id', $centerId)
-            ->where('zamat_id', $zamatId)
-            ->get();
+        $quranQuestions = $query->get();
 
         return response()->json($quranQuestions);
     }
@@ -31,11 +36,13 @@ class QuranQuestionController extends Controller
 
     public function store(Request $request)
     {
-        $lastExamId = QuranQuestion::max('exam_id') ?? 22;
+        $lastExam = Exam::latest('id')->first();
+        $lastExamId = $lastExam ? $lastExam->id : null;
 
         $validatedData = $request->validate([
             'center_id' => 'nullable|exists:institutes,id',
-            'zamat_id' => 'required|integer',
+            'zamat_id' => 'required|exists:zamats,id',
+            'para_group_id' => 'nullable|exists:para_groups,id',
             'questions' => 'required|array',
             'questions.*.surah' => 'required|integer',
             'questions.*.verses' => 'required|string',
@@ -47,15 +54,17 @@ class QuranQuestionController extends Controller
             'exam_id' => $lastExamId,
             'center_id' => $validatedData['center_id'],
             'zamat_id' => $validatedData['zamat_id'],
+            'para_group_id' => $validatedData['para_group_id'],
             'questions' => $validatedData['questions'],
         ]);
 
         return response()->json(['message' => 'Questions saved successfully'], 201);
     }
 
+
     public function show($id)
     {
-        $quranQuestion = QuranQuestion::find($id);
+        $quranQuestion = QuranQuestion::with(['center.institute', 'zamat', 'paraGroup'])->find($id);
 
         if (!$quranQuestion) {
             return response()->json(['error' => 'Quran question not found'], 404);
@@ -74,7 +83,8 @@ class QuranQuestionController extends Controller
 
         $validatedData = $request->validate([
             'center_id' => 'nullable|exists:institutes,id',
-            'zamat_id' => 'sometimes|required|integer',
+            'zamat_id' => 'sometimes|required|exists:zamats,id',
+            'para_group_id' => 'nullable|exists:para_groups,id', // নতুন ফিল্ড
             'questions' => 'sometimes|required|array',
             'questions.*.surah' => 'sometimes|required|integer',
             'questions.*.verses' => 'sometimes|required|string',
@@ -97,6 +107,6 @@ class QuranQuestionController extends Controller
 
         $quranQuestion->delete();
 
-        return response()->json(['message' => 'Quran question deleted successfully']);
+        return response()->json(['message' => 'Quran question deleted successfully.']);
     }
 }

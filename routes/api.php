@@ -14,6 +14,7 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\InstituteController;
 use App\Http\Controllers\LetterDistributionCenterController;
 use App\Http\Controllers\NoticeController;
+use App\Http\Controllers\ParaGroupController;
 use App\Http\Controllers\QuranQuestionController;
 use App\Http\Controllers\SiteSettingsController;
 use App\Http\Controllers\SmsController;
@@ -128,6 +129,9 @@ Route::get('/exam-subjects/{id}', [ExamSubjectController::class, 'show']);
 Route::get('/quran-questions', [QuranQuestionController::class, 'index']);
 Route::get('/quran-questions/{id}', [QuranQuestionController::class, 'show']);
 
+Route::get('/para-groups', [ParaGroupController::class, 'index']);
+Route::get('/para-groups/{id}', [ParaGroupController::class, 'show']);
+
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 
     Route::get('/users', [UserController::class, 'index']);
@@ -176,6 +180,9 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
 
         Route::post('/exam-subjects', [ExamSubjectController::class, 'store']);
         Route::put('/exam-subjects/{id}', [ExamSubjectController::class, 'update']);
+
+        Route::post('/para-groups', [ParaGroupController::class, 'store']);
+        Route::put('/para-groups/{id}', [ParaGroupController::class, 'update']);
     });
 
     Route::middleware('role:Super Admin,Developer')->group(function () {
@@ -236,6 +243,9 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::delete('/exam-subjects/{id}', [ExamSubjectController::class, 'destroy']);
 
         Route::delete('/quran-questions/{id}', [QuranQuestionController::class, 'destroy']);
+
+        Route::delete('/para-groups/{id}', [ParaGroupController::class, 'destroy']);
+
     });
 
     Route::middleware('role:Developer')->group(function () {
