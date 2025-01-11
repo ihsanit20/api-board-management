@@ -14,15 +14,13 @@ class PrintController extends Controller
     public function generateMarkSheet(Request $request)
     {
         $validated = $request->validate([
-            'center_id' => 'required|exists:centers,id',
+            'center_id' => 'required|exists:institutes,id',
             'zamat_id' => 'required|exists:zamats,id',
         ]);
 
-        // Fetch Centers and Zamats
         $center = Center::findOrFail($validated['center_id']);
         $zamat = Zamat::findOrFail($validated['zamat_id']);
 
-        // Fetch last exam ID for the given Zamat
         $lastExamId = ExamSubject::whereHas('subject', function ($query) use ($validated) {
             $query->where('zamat_id', $validated['zamat_id']);
         })->latest()->pluck('exam_id')->first();
@@ -31,20 +29,23 @@ class PrintController extends Controller
             return response()->json(['message' => 'No exams found for this Zamat.'], 404);
         }
 
-        // Fetch students with roll numbers and associated subjects
-        $students = Student::where('center_id', $validated['center_id'])
+        $students = Student::where('center_id', $center->institute_id)
             ->where('zamat_id', $validated['zamat_id'])
             ->whereNotNull('roll_number')
             ->get();
 
-        $subjects = Subject::where('zamat_id', $validated['zamat_id'])->get();
-
-        $examSubjects = ExamSubject::where('exam_id', $lastExamId)
-            ->with('subject')
-            ->get();
+        $examSubjects = ExamSubject::whereHas('subject', function ($query) use ($validated) {
+            $query->where('zamat_id', $validated['zamat_id']);
+        })
+        ->where('exam_id', $lastExamId)
+        ->with('subject')
+        ->get();
 
         return response()->json([
-            'center' => $center,
+            'center' => [
+                'id' => $center->id,
+                'institute_name' => $center->institute->name,
+            ],
             'zamat' => $zamat,
             'students' => $students,
             'subjects' => $examSubjects->map(function ($examSubject) {
@@ -55,6 +56,6 @@ class PrintController extends Controller
             }),
             'exam_id' => $lastExamId,
         ]);
-    }
 
+    }
 }

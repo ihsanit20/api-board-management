@@ -15,6 +15,7 @@ use App\Http\Controllers\InstituteController;
 use App\Http\Controllers\LetterDistributionCenterController;
 use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\ParaGroupController;
+use App\Http\Controllers\PrintController;
 use App\Http\Controllers\QuranQuestionController;
 use App\Http\Controllers\SiteSettingsController;
 use App\Http\Controllers\SmsController;
@@ -131,6 +132,8 @@ Route::get('/quran-questions/{id}', [QuranQuestionController::class, 'show']);
 
 Route::get('/para-groups', [ParaGroupController::class, 'index']);
 Route::get('/para-groups/{id}', [ParaGroupController::class, 'show']);
+
+Route::post('/generate-mark-sheet', [PrintController::class, 'generateMarkSheet']);
 
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 
