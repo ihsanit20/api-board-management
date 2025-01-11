@@ -15,7 +15,8 @@ class QuranQuestionController extends Controller
         $zamatId = $request->query('zamat_id');
         $paraGroupId = $request->query('para_group_id');
 
-        $query = QuranQuestion::with(['center.institute', 'zamat', 'paraGroup'])
+        // Include department relationship through zamat
+        $query = QuranQuestion::with(['center.institute', 'zamat.department', 'paraGroup'])
             ->where('exam_id', $lastExamId);
 
         if ($centerId) {
@@ -32,6 +33,7 @@ class QuranQuestionController extends Controller
 
         return response()->json($quranQuestions);
     }
+
 
 
     public function store(Request $request)
