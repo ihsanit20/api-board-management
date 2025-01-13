@@ -12,6 +12,8 @@ class ExamSubject extends Model
     protected $fillable = ['exam_id', 'subject_id', 'full_marks', 'pass_marks'];
 
     protected $casts = [
+        'exam_id' => 'int',
+        'subject_id' => 'int',
         'full_marks' => 'int',
         'pass_marks' => 'int',
     ];
