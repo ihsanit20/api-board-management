@@ -134,6 +134,7 @@ Route::get('/para-groups', [ParaGroupController::class, 'index']);
 Route::get('/para-groups/{id}', [ParaGroupController::class, 'show']);
 
 Route::post('/generate-mark-sheet', [PrintController::class, 'generateMarkSheet']);
+Route::post('/print-envelop-final', [PrintController::class, 'PrintEnvelopFinal']);
 
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 
@@ -248,10 +249,7 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::delete('/quran-questions/{id}', [QuranQuestionController::class, 'destroy']);
 
         Route::delete('/para-groups/{id}', [ParaGroupController::class, 'destroy']);
-
     });
 
-    Route::middleware('role:Developer')->group(function () {
-
-    });
+    Route::middleware('role:Developer')->group(function () {});
 });

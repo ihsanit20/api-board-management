@@ -11,6 +11,11 @@ class ExamSubject extends Model
 
     protected $fillable = ['exam_id', 'subject_id', 'full_marks', 'pass_marks'];
 
+    protected $casts = [
+        'full_marks' => 'int',
+        'pass_marks' => 'int',
+    ];
+
     public function exam()
     {
         return $this->belongsTo(Exam::class);
