@@ -27,6 +27,7 @@ class PrintController extends Controller
                 'institutes.name as institute_name',
                 'institutes.institute_code',
                 'institutes.phone',
+                'zamats.id as zamat_id',
                 'zamats.name as zamat_name',
                 DB::raw('COUNT(students.id) as student_count')
             )
@@ -52,6 +53,7 @@ class PrintController extends Controller
                         'phone' => $institute->phone,
                         'zamat_counts' => $institutes->map(function ($item) {
                             return [
+                                'zamat_id' => $item->zamat_id,
                                 'zamat_name' => $item->zamat_name,
                                 'student_count' => $item->student_count,
                             ];
