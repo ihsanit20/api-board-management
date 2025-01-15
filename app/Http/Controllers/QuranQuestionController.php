@@ -49,7 +49,7 @@ class QuranQuestionController extends Controller
             'questions.*.surah' => 'required|integer',
             'questions.*.verses' => 'required|string',
             'questions.*.text' => 'required|string',
-            'questions.*.page' => 'required|integer',
+            'questions.*.page' => 'nullable|integer',
         ]);
 
         QuranQuestion::create([
@@ -91,7 +91,7 @@ class QuranQuestionController extends Controller
             'questions.*.surah' => 'sometimes|required|integer',
             'questions.*.verses' => 'sometimes|required|string',
             'questions.*.text' => 'sometimes|required|string',
-            'questions.*.page' => 'sometimes|required|integer',
+            'questions.*.page' => 'nullable|integer',
         ]);
 
         $quranQuestion->update($validatedData);
