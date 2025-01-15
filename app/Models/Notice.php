@@ -13,5 +13,6 @@ class Notice extends Model
         'title',
         'description',
         'publish_date',
+        'file_path',
     ];
 }

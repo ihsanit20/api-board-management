@@ -95,6 +95,7 @@ Route::get('/area-wise-student-count', [StudentController::class, 'areaWiseStude
 
 Route::get('/notices', [NoticeController::class, 'index']);
 Route::get('/notices/{id}', [NoticeController::class, 'show']);
+Route::get('notices/{id}/download', [NoticeController::class, 'downloadFile']);
 
 Route::get('/examiners', [ExaminerController::class, 'index']);
 Route::post('/examiners-public', [ExaminerController::class, 'publicStore']);
