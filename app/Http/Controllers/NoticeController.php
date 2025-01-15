@@ -10,7 +10,7 @@ class NoticeController extends Controller
 {
     public function index()
     {
-        return Notice::all();
+        return Notice::latest()->get();
     }
 
     public function store(Request $request)
@@ -88,6 +88,4 @@ class NoticeController extends Controller
 
         return response()->json(['message' => 'File not found'], 404);
     }
-
 }
-
