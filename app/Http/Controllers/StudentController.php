@@ -192,6 +192,7 @@ class StudentController extends Controller
                     return [
                         'institute_name' => optional($instituteGroup->first()->institute)->name,
                         'institute_code' => optional($instituteGroup->first()->institute)->institute_code,
+                        'phone' => optional($instituteGroup->first()->institute)->phone,
                         'zamats' => $instituteGroup->groupBy('zamat_id')->map(function ($zamatGroup, $zamatId) {
                             $zamatName = optional($zamatGroup->first()->zamat)->name;
                             return [
@@ -376,7 +377,7 @@ class StudentController extends Controller
             ->where('is_center', 1)
             ->exists();
 
-        if($center_exists) {
+        if ($center_exists) {
             $students = Student::query()
                 ->where('exam_id', $last_exam->id)
                 ->where('zamat_id', $request->zamat_id)
@@ -389,7 +390,7 @@ class StudentController extends Controller
         }
 
         return response()->json([
-            'is_success' => (boolean) ($students ?? false)
+            'is_success' => (bool) ($students ?? false)
         ]);
     }
 
@@ -480,7 +481,7 @@ class StudentController extends Controller
             ])
             ->select('area_id', 'zamat_id', DB::raw('COUNT(id) as student_count'))
             ->groupBy('area_id', 'zamat_id')
-            ->orderBy('area_id')  
+            ->orderBy('area_id')
             ->orderBy('zamat_id')
             ->get()
             ->groupBy('area_id')
@@ -501,6 +502,4 @@ class StudentController extends Controller
 
         return response()->json($data);
     }
-
-
 }

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Center;
 use App\Models\ExamSubject;
 use App\Models\Student;
-use App\Models\Subject;
 use App\Models\Zamat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
