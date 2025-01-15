@@ -86,7 +86,7 @@ class QuranQuestionController extends Controller
         $validatedData = $request->validate([
             'center_id' => 'nullable|exists:institutes,id',
             'zamat_id' => 'sometimes|required|exists:zamats,id',
-            'para_group_id' => 'nullable|exists:para_groups,id', // নতুন ফিল্ড
+            'para_group_id' => 'nullable|exists:para_groups,id',
             'questions' => 'sometimes|required|array',
             'questions.*.surah' => 'sometimes|required|integer',
             'questions.*.verses' => 'sometimes|required|string',
