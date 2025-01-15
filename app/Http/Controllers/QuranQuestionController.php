@@ -34,8 +34,6 @@ class QuranQuestionController extends Controller
         return response()->json($quranQuestions);
     }
 
-
-
     public function store(Request $request)
     {
         $lastExam = Exam::latest('id')->first();
