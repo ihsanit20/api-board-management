@@ -90,11 +90,14 @@ class PrintController extends Controller
             $query->where('zamat_id', $validated['zamat_id']);
         })
             ->where('exam_id', $lastExamId)
-            ->with('subject')
+            ->with(['subject', 'exam']) // এক্সাম সম্পর্ক লোড করা হচ্ছে
             ->get();
 
         // Examiner তথ্য সংগ্রহ
         $examiner = Examiner::where('center_id', $validated['center_id'])->first();
+
+        // এক্সামের নাম সংগ্রহ
+        $examName = $examSubjects->first()?->exam?->name;
 
         return response()->json([
             'center' => [
@@ -110,6 +113,7 @@ class PrintController extends Controller
                 ];
             }),
             'exam_id' => $lastExamId,
+            'exam_name' => $examName, // এক্সামের নাম যুক্ত করা হয়েছে
             'examiner' => $examiner ? [
                 'name' => $examiner->name,
                 'phone' => $examiner->phone,
