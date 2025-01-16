@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Center;
+use App\Models\Examiner;
 use App\Models\ExamSubject;
 use App\Models\Student;
 use App\Models\Zamat;
@@ -29,7 +30,7 @@ class PrintController extends Controller
                 'zamats.name as zamat_name',
                 DB::raw('COUNT(students.id) as student_count')
             )
-            ->whereNotNull('students.roll_number') // রোল নাম্বার ফিল্টার যোগ করা হলো
+            ->whereNotNull('students.roll_number')
             ->groupBy('areas.name', 'institutes.name', 'institutes.institute_code', 'institutes.phone', 'zamats.name');
 
         if ($areaName) {
@@ -92,6 +93,9 @@ class PrintController extends Controller
             ->with('subject')
             ->get();
 
+        // Examiner তথ্য সংগ্রহ
+        $examiner = Examiner::where('center_id', $validated['center_id'])->first();
+
         return response()->json([
             'center' => [
                 'id' => $center->id,
@@ -106,6 +110,10 @@ class PrintController extends Controller
                 ];
             }),
             'exam_id' => $lastExamId,
+            'examiner' => $examiner ? [
+                'name' => $examiner->name,
+                'phone' => $examiner->phone,
+            ] : null,
         ]);
     }
 }
