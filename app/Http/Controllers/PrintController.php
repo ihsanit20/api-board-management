@@ -84,6 +84,7 @@ class PrintController extends Controller
         $students = Student::where('center_id', $center->institute_id)
             ->where('zamat_id', $validated['zamat_id'])
             ->whereNotNull('roll_number')
+            ->orderBy('roll_number', 'asc')
             ->get();
 
         $examSubjects = ExamSubject::whereHas('subject', function ($query) use ($validated) {
