@@ -91,14 +91,14 @@ class PrintController extends Controller
             $query->where('zamat_id', $validated['zamat_id']);
         })
             ->where('exam_id', $lastExamId)
-            ->with(['subject', 'exam']) // এক্সাম সম্পর্ক লোড করা হচ্ছে
+            ->with(['subject', 'exam'])
             ->get();
 
-        // Examiner তথ্য সংগ্রহ
         $examiner = Examiner::where('center_id', $validated['center_id'])->first();
 
-        // এক্সামের নাম সংগ্রহ
         $examName = $examSubjects->first()?->exam?->name;
+
+        $groupName = $students->first()?->group?->name;
 
         return response()->json([
             'center' => [
@@ -106,6 +106,7 @@ class PrintController extends Controller
                 'institute_name' => $center->institute->name,
             ],
             'zamat' => $zamat,
+            'group_name' => $groupName, // গ্রুপের নাম রেসপন্সে যোগ করা হলো
             'students' => $students,
             'subjects' => $examSubjects->map(function ($examSubject) {
                 return [
@@ -114,11 +115,12 @@ class PrintController extends Controller
                 ];
             }),
             'exam_id' => $lastExamId,
-            'exam_name' => $examName, // এক্সামের নাম যুক্ত করা হয়েছে
+            'exam_name' => $examName,
             'examiner' => $examiner ? [
                 'name' => $examiner->name,
                 'phone' => $examiner->phone,
             ] : null,
         ]);
     }
+
 }
