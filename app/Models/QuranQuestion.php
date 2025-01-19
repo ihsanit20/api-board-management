@@ -24,7 +24,7 @@ class QuranQuestion extends Model
     // Center সম্পর্ক
     public function center()
     {
-        return $this->belongsTo(Center::class, 'center_id', 'id');
+        return $this->belongsTo(Institute::class, 'center_id', 'id');
     }
 
     // Zamat সম্পর্ক
