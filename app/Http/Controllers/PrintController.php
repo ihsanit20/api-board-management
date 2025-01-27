@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Center;
+use App\Models\Exam;
 use App\Models\Examiner;
 use App\Models\ExamSubject;
 use App\Models\Student;
@@ -121,6 +122,38 @@ class PrintController extends Controller
                 'phone' => $examiner->phone,
             ] : null,
         ]);
+    }
+
+    public function centerEnvelop()
+    {
+        $lastExam = Exam::latest()->first();
+
+        $data = Student::query()
+            ->with(['center', 'zamat', 'exam'])
+            ->where('exam_id', $lastExam->id)
+            ->whereNotNull('roll_number')
+            ->select('center_id', 'zamat_id', 'exam_id', DB::raw('COUNT(id) as student_count'))
+            ->groupBy('center_id', 'zamat_id', 'exam_id')
+            ->get()
+            ->groupBy('center_id')
+            ->map(function ($items, $centerId) {
+                $centerName = optional($items->first()->center)->name;
+                $examName = optional($items->first()->exam)->name;
+                $zamatData = $items->map(function ($item) {
+                    return [
+                        'zamat_name' => optional($item->zamat)->name,
+                        'student_count' => $item->student_count,
+                    ];
+                });
+
+                return [
+                    'center_name' => $centerName,
+                    'exam_name' => $examName,
+                    'zamat_data' => $zamatData, 
+                ];
+            });
+
+        return response()->json($data->values());
     }
 
 }
