@@ -16,7 +16,7 @@ class QuranQuestionController extends Controller
         $paraGroupId = $request->query('para_group_id');
 
         // Include department relationship through zamat
-        $query = QuranQuestion::with(['center', 'zamat.department', 'paraGroup'])
+        $query = QuranQuestion::with(['exam:id,name','center', 'zamat.department', 'paraGroup'])
             ->where('exam_id', $lastExamId);
 
         if ($centerId) {

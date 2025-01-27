@@ -13,7 +13,7 @@ class QuranQuestion extends Model
         'exam_id',
         'center_id',
         'zamat_id',
-        'para_group_id', // নতুন ফিল্ড যোগ করা হয়েছে
+        'para_group_id',
         'questions',
     ];
 
@@ -21,19 +21,21 @@ class QuranQuestion extends Model
         'questions' => 'array',
     ];
 
-    // Center সম্পর্ক
+    public function exam()
+    {
+        return $this->belongsTo(Exam::class, 'exam_id', 'id');
+    }
+
     public function center()
     {
         return $this->belongsTo(Institute::class, 'center_id', 'id');
     }
 
-    // Zamat সম্পর্ক
     public function zamat()
     {
         return $this->belongsTo(Zamat::class, 'zamat_id', 'id');
     }
 
-    // Para Group সম্পর্ক
     public function paraGroup()
     {
         return $this->belongsTo(ParaGroup::class, 'para_group_id', 'id');
