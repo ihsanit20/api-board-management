@@ -137,6 +137,7 @@ Route::get('/para-groups/{id}', [ParaGroupController::class, 'show']);
 Route::post('/generate-mark-sheet', [PrintController::class, 'generateMarkSheet']);
 Route::get('/print-envelop-final', [PrintController::class, 'PrintEnvelopFinal']);
 Route::get('/print-center-envelop', [PrintController::class, 'centerEnvelop']);
+Route::get('/print-seat-number', [PrintController::class, 'seatNumber']);
 
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 

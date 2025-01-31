@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\DB;
 
 class PrintController extends Controller
 {
-
     public function PrintEnvelopFinal(Request $request)
     {
         $areaName = $request->input('area_name');
@@ -149,11 +148,49 @@ class PrintController extends Controller
                 return [
                     'center_name' => $centerName,
                     'exam_name' => $examName,
-                    'zamat_data' => $zamatData, 
+                    'zamat_data' => $zamatData,
                 ];
             });
 
         return response()->json($data->values());
+    }
+
+    public function seatNumber(Request $request)
+    {
+        $validated = $request->validate([
+            'zamat_id' => 'required|exists:zamats,id',
+            'center_id' => 'required|exists:centers,id',
+        ]);
+
+        $zamatId = $validated['zamat_id'];
+        $centerId = $validated['center_id'];
+
+        $lastExamId = Exam::latest()->value('id');
+
+        if (!$lastExamId) {
+            return response()->json(['message' => 'No exams found.'], 404);
+        }
+
+        $lastExamName = Exam::find($lastExamId)->name;
+
+        $students = Student::where('zamat_id', $zamatId)
+            ->where('center_id', $centerId)
+            ->where('exam_id', $lastExamId)
+            ->whereNotNull('roll_number')
+            ->with(['zamat', 'center'])
+            ->select('id', 'name', 'zamat_id', 'center_id', 'exam_id')
+            ->get()
+            ->map(function ($student) use ($lastExamName) {
+                return [
+                    'id' => $student->id,
+                    'name' => $student->name,
+                    'zamat_name' => $student->zamat->name,
+                    'center_name' => $student->center->name,
+                    'exam_name' => $lastExamName, 
+                ];
+            });
+
+        return response()->json($students);
     }
 
 }
