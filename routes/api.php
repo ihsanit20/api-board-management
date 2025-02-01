@@ -12,6 +12,7 @@ use App\Http\Controllers\FeeCollectionController;
 use App\Http\Controllers\FeeController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\InstituteController;
+use App\Http\Controllers\LastExamResultController;
 use App\Http\Controllers\LetterDistributionCenterController;
 use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\ParaGroupController;
@@ -130,6 +131,9 @@ Route::get('/exam-subjects/{id}', [ExamSubjectController::class, 'show']);
 
 Route::get('/quran-questions', [QuranQuestionController::class, 'index']);
 Route::get('/quran-questions/{id}', [QuranQuestionController::class, 'show']);
+
+Route::get('/last-exam-result-data', [LastExamResultController::class, 'data']);
+Route::get('/last-exam-results', [LastExamResultController::class, 'index']);
 
 Route::get('/para-groups', [ParaGroupController::class, 'index']);
 Route::get('/para-groups/{id}', [ParaGroupController::class, 'show']);
