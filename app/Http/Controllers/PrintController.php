@@ -159,7 +159,7 @@ class PrintController extends Controller
     {
         $validated = $request->validate([
             'zamat_id' => 'required|exists:zamats,id',
-            'center_id' => 'required|exists:centers,id',
+            'center_id' => 'required|exists:institutes,id',
         ]);
 
         $zamatId = $validated['zamat_id'];
@@ -178,19 +178,21 @@ class PrintController extends Controller
             ->where('exam_id', $lastExamId)
             ->whereNotNull('roll_number')
             ->with(['zamat', 'center'])
-            ->select('id', 'name', 'zamat_id', 'center_id', 'exam_id')
+            ->select('id', 'name', 'roll_number', 'zamat_id', 'center_id', 'exam_id', 'institute_id')
+            ->orderBy('roll_number')
             ->get()
             ->map(function ($student) use ($lastExamName) {
                 return [
                     'id' => $student->id,
                     'name' => $student->name,
+                    'roll_number' => $student->roll_number,
                     'zamat_name' => $student->zamat->name,
                     'center_name' => $student->center->name,
-                    'exam_name' => $lastExamName, 
+                    'institute_name' => $student->institute->name,
+                    'exam_name' => $lastExamName,
                 ];
             });
 
         return response()->json($students);
     }
-
 }
