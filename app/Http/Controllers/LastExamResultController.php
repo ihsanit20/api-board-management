@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Exam;
+use App\Models\ExamSubject;
 use App\Models\Result;
 use App\Models\Student;
 use App\Models\Subject;
@@ -17,7 +18,7 @@ class LastExamResultController extends Controller
 
         $centerId = $request->query('center_id');
         $zamatId = $request->query('zamat_id');
-        $subjectId = $request->query('subject_id');
+        $examSubjectId = $request->query('exam_subject_id');
 
         $students = Student::query()
             ->where('exam_id', $lastExamId)
@@ -31,77 +32,83 @@ class LastExamResultController extends Controller
                 'center_id',
                 'institute_id',
             ]);
-        
+
         $results = Result::query()
             ->where('exam_id', $lastExamId)
             ->where('zamat_id', $zamatId)
             ->whereIn('student_id', $students->pluck('id'))
-            ->when($subjectId, function ($query, $subjectId) {
-                $query->where('subject_id', $subjectId);
+            ->when($examSubjectId, function ($query, $examSubjectId) {
+                $query->where('exam_subject_id', $examSubjectId);
             })
             ->get();
 
-        $subjects = Subject::query()
-            ->where('zamat_id', $zamatId)
-            ->when($subjectId, function ($query, $subjectId) {
+        $exam_subjects = ExamSubject::query()
+            ->with([
+                'subject:id,name,code,zamat_id',
+                'subject.zamat:id,name',
+            ])
+            ->whereHas('subject', function ($query) use ($zamatId, $examSubjectId) {
                 $query
-                    ->with('zamat:id,name')
-                    ->where('id', $subjectId)
-                ;
+                    ->where('zamat_id', $zamatId)
+                    ->when($examSubjectId, function ($query, $examSubjectId) {
+                        $query
+                            ->where('id', $examSubjectId);
+                    });
             })
             ->get([
                 "id",
-                "zamat_id",
-                "name",
-                "code",
+                "exam_id",
+                "subject_id",
+                "full_marks",
+                "pass_marks",
             ]);
 
-        return response()->json(compact("students", "results", "subjects"));
+        return response()->json(compact("students", "results", "exam_subjects"));
     }
 
-    public function submitMarks(Request $request, Zamat $zamat, Subject $subject)
+    public function submitMarks(Request $request, Zamat $zamat, ExamSubject $examSubject)
     {
         $lastExamId = Exam::max('id');
-    
+
         $request->validate([
             'marks' => 'required|array'
         ]);
-    
+
         $results = [];
-    
+
         foreach ($request->marks as $student_id => $marks) {
-            // শুধুমাত্র ফাঁকা না থাকা নম্বর সংগ্রহ করুন
-            $validMarks = array_filter([
-                isset($marks['examiner1']) && $marks['examiner1'] !== '' ? (float) $marks['examiner1'] : null,
-                isset($marks['examiner2']) && $marks['examiner2'] !== '' ? (float) $marks['examiner2'] : null
-            ], fn($mark) => $mark !== null);
-    
-            // গড় নির্ণয় (যদি কোনো নম্বর থাকে)
-            $averageMark = count($validMarks) > 0 ? array_sum($validMarks) / count($validMarks) : 0;
-    
-            // ডাটাবেজ আপডেট বা তৈরি করুন
+            // return
+            $validMarks = [
+                isset($marks[0]) && $marks[0] >= 0 ? (float) $marks[0] : '',
+                isset($marks[1]) && $marks[1] >= 0 ? (float) $marks[1] : '',
+            ];
+
+            $filteredMarks = array_filter($marks, fn($mark) => $mark !== null);
+
+            $averageMark = count($filteredMarks) > 0 ? array_sum($filteredMarks) / count($filteredMarks) : 0;
+
             $result = Result::updateOrCreate(
                 [
                     'exam_id'    => $lastExamId,
                     'zamat_id'   => $zamat->id,
-                    'subject_id' => $subject->id,
+                    'exam_subject_id' => $examSubject->id,
                     'student_id' => $student_id,
                 ],
                 [
-                    'mark'  => $averageMark, // গড় নম্বর সংরক্ষণ করা হবে
-                    'marks' => $marks, // মূল নম্বরগুলো JSON আকারে সংরক্ষণ করা হবে
+                    'mark'  => $averageMark,
+                    'marks' => $validMarks,
                 ]
             );
-    
+
             $results[] = $result;
         }
-    
+
         return response()->json([
             'message' => 'Marks submitted successfully!',
             'results' => $results
         ], 200);
     }
-    
+
 
     public function index(Request $request)
     {
@@ -112,8 +119,8 @@ class LastExamResultController extends Controller
             ->when($request->zamat_id, function ($query, $zamat_id) {
                 $query->where('zamat_id', $zamat_id);
             })
-            ->when($request->subject_id, function ($query, $subject_id) {
-                $query->where('subject_id', $subject_id);
+            ->when($request->exam_subject_id, function ($query, $exam_subject_id) {
+                $query->where('exam_subject_id', $exam_subject_id);
             })
             ->when($request->student_id, function ($query, $student_id) {
                 $query->where('student_id', $student_id);

@@ -17,20 +17,20 @@ return new class extends Migration
             $table->unsignedBigInteger('student_id')->nullable(false)->change();
             $table->unsignedBigInteger('zamat_id')->nullable(false)->change();
 
-            // নতুন subject_id কলাম যোগ করা
-            $table->unsignedBigInteger('subject_id')->after('student_id');
+            // নতুন exam_subject_id কলাম যোগ করা
+            $table->unsignedBigInteger('exam_subject_id')->after('student_id');
 
             // ফরেন কী কনস্ট্রেইন্ট যোগ করা
-            $table->foreign('subject_id')->references('id')->on('subjects')->onDelete('restrict');
+            $table->foreign('exam_subject_id')->references('id')->on('exam_subjects')->onDelete('restrict');
 
             // ✅ সব ফিল্ড একসাথে ইউনিক করা (কম্বাইন্ড ইউনিক কনস্ট্রেইন্ট)
-            $table->unique(['exam_id', 'student_id', 'zamat_id', 'subject_id'], 'unique_exam_student_zamat_subject');
+            $table->unique(['exam_id', 'student_id', 'zamat_id', 'exam_subject_id'], 'unique_exam_student_zamat_exam_subject');
 
             // 🔥 পারফরম্যান্স বাড়ানোর জন্য আলাদা আলাদা ইনডেক্স যোগ করা
             $table->index(['exam_id', 'student_id']);
             $table->index(['exam_id', 'zamat_id']);
-            $table->index(['exam_id', 'subject_id']);
-            $table->index(['exam_id', 'student_id', 'zamat_id', 'subject_id']); // ফুল কম্বাইন্ড ইনডেক্স
+            $table->index(['exam_id', 'exam_subject_id']);
+            $table->index(['exam_id', 'student_id', 'zamat_id', 'exam_subject_id']); // ফুল কম্বাইন্ড ইনডেক্স
         });
     }
 
@@ -46,14 +46,14 @@ return new class extends Migration
             // ইনডেক্স ড্রপ করা
             $table->dropIndex(['exam_id', 'student_id']);
             $table->dropIndex(['exam_id', 'zamat_id']);
-            $table->dropIndex(['exam_id', 'subject_id']);
-            $table->dropIndex(['exam_id', 'student_id', 'zamat_id', 'subject_id']);
+            $table->dropIndex(['exam_id', 'exam_subject_id']);
+            $table->dropIndex(['exam_id', 'student_id', 'zamat_id', 'exam_subject_id']);
 
             // ফরেন কী ড্রপ করা
-            $table->dropForeign(['subject_id']);
+            $table->dropForeign(['exam_subject_id']);
 
-            // subject_id কলাম ড্রপ করা
-            $table->dropColumn('subject_id');
+            // exam_subject_id কলাম ড্রপ করা
+            $table->dropColumn('exam_subject_id');
 
             // আগের nullable(true) এ ফিরিয়ে আনা
             $table->unsignedBigInteger('exam_id')->nullable()->change();

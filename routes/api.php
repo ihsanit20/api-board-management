@@ -133,7 +133,7 @@ Route::get('/quran-questions', [QuranQuestionController::class, 'index']);
 Route::get('/quran-questions/{id}', [QuranQuestionController::class, 'show']);
 
 Route::get('/last-exam-result-data', [LastExamResultController::class, 'data']);
-Route::post('/last-exam-submit-mark/{zamat}/{subject}', [LastExamResultController::class, 'submitMarks']);
+Route::post('/last-exam-submit-mark/{zamat}/{examSubject}', [LastExamResultController::class, 'submitMarks']);
 Route::get('/last-exam-results', [LastExamResultController::class, 'index']);
 
 Route::get('/para-groups', [ParaGroupController::class, 'index']);
