@@ -24,9 +24,12 @@ class LastExamResultController extends Controller
             ->where('exam_id', $lastExamId)
             ->where('center_id', $centerId)
             ->where('zamat_id', $zamatId)
+            ->whereNotNull('roll_number')
+            ->orderBy('roll_number')
             ->get([
                 'id',
                 'name',
+                'roll_number',
                 'exam_id',
                 'zamat_id',
                 'center_id',
