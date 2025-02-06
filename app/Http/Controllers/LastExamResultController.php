@@ -54,8 +54,7 @@ class LastExamResultController extends Controller
                 $query
                     ->where('zamat_id', $zamatId)
                     ->when($examSubjectId, function ($query, $examSubjectId) {
-                        $query
-                            ->where('id', $examSubjectId);
+                        $query->where('exam_subjects.id', $examSubjectId);
                     });
             })
             ->get([
