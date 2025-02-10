@@ -195,4 +195,48 @@ class PrintController extends Controller
 
         return response()->json($students);
     }
+
+    public function centerAcknowledgment(Request $request)
+    {
+        // Validate department_id input
+        $request->validate([
+            'department_id' => 'required|exists:departments,id'
+        ]);
+
+        $departmentId = $request->department_id;
+        $lastExam = Exam::latest()->first();
+
+        $data = Student::with(['center', 'zamat', 'institute'])
+            ->whereHas('zamat', function ($query) use ($departmentId) {
+                $query->where('department_id', $departmentId);
+            })
+            ->whereNotNull('roll_number')
+            ->where('exam_id', $lastExam->id)
+            ->select(
+                'center_id',
+                'institute_id',
+                DB::raw('COUNT(*) as student_count')
+            )
+            ->groupBy('center_id', 'institute_id')
+            ->get()
+            ->groupBy('center_id')
+            ->map(function ($centerGroup) {
+                $centerName = optional($centerGroup->first()->center)->name;
+                $institutes = $centerGroup->map(function ($instituteGroup) {
+                    return [
+                        'institute_name' => optional($instituteGroup->first()->institute)->name,
+                        'institute_code' => optional($instituteGroup->first()->institute)->institute_code,
+                        'phone' => optional($instituteGroup->first()->institute)->phone,
+                        'student_count' => $instituteGroup->sum('student_count')
+                    ];
+                })->values();
+
+                return [
+                    'center' => $centerName,
+                    'institutes' => $institutes
+                ];
+            });
+
+        return response()->json($data);
+    }
 }
