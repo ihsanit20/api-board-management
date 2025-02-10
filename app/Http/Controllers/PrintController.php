@@ -198,7 +198,6 @@ class PrintController extends Controller
 
     public function centerAcknowledgment(Request $request)
     {
-        // Validate department_id input
         $request->validate([
             'department_id' => 'required|exists:departments,id'
         ]);
@@ -206,7 +205,11 @@ class PrintController extends Controller
         $departmentId = $request->department_id;
         $lastExam = Exam::latest()->first();
 
-        $data = Student::with(['center', 'zamat', 'institute'])
+        if (!$lastExam) {
+            return response()->json(['error' => 'No exam found'], 404);
+        }
+
+        $data = Student::with(['center', 'institute'])
             ->whereHas('zamat', function ($query) use ($departmentId) {
                 $query->where('department_id', $departmentId);
             })
@@ -220,18 +223,21 @@ class PrintController extends Controller
             ->groupBy('center_id', 'institute_id')
             ->get()
             ->groupBy('center_id')
-            ->map(function ($centerGroup) {
+            ->map(function ($centerGroup) use ($lastExam) { // ✅ $lastExam এখানে পাঠানো হয়েছে
+
                 $centerName = optional($centerGroup->first()->center)->name;
+
                 $institutes = $centerGroup->map(function ($instituteGroup) {
                     return [
-                        'institute_name' => optional($instituteGroup->first()->institute)->name,
-                        'institute_code' => optional($instituteGroup->first()->institute)->institute_code,
-                        'phone' => optional($instituteGroup->first()->institute)->phone,
-                        'student_count' => $instituteGroup->sum('student_count')
+                        'institute_name' => optional($instituteGroup->institute)->name,
+                        'institute_code' => optional($instituteGroup->institute)->institute_code,
+                        'phone' => optional($instituteGroup->institute)->phone,
+                        'student_count' => $instituteGroup->student_count
                     ];
                 })->values();
 
                 return [
+                    'exam_name' => $lastExam->name, // ✅ সেন্টারের সাথে এক্সাম নাম যুক্ত করা হয়েছে
                     'center' => $centerName,
                     'institutes' => $institutes
                 ];
