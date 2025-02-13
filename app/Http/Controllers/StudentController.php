@@ -19,13 +19,17 @@ class StudentController extends Controller
             'exam:id,name',
             'zamat:id,name',
             'area:id,name',
-            'institute:id,name,institute_code',
-            'center:id,name,institute_code',
+            'institute:id,name,institute_code,phone',
+            'center:id,name',
             'group:id,name'
         ]);
 
         if ($request->has('registration_number') && $request->registration_number) {
             $query->where('registration_number', $request->registration_number);
+        }
+
+        if ($request->has('roll_number') && $request->roll_number) {
+            $query->where('roll_number', $request->roll_number);
         }
 
         if ($request->has('application_id') && $request->application_id) {
@@ -36,10 +40,6 @@ class StudentController extends Controller
             $query->whereHas('institute', function ($q) use ($request) {
                 $q->where('institute_code', $request->institute_code);
             });
-        }
-
-        if ($request->has('zamat_id') && $request->zamat_id) {
-            $query->where('zamat_id', $request->zamat_id);
         }
 
         if ($request->has('exam_id') && $request->exam_id) {
