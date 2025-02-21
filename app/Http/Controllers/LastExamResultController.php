@@ -87,7 +87,7 @@ class LastExamResultController extends Controller
 
             $filteredMarks = array_filter($marks, fn($mark) => $mark !== null);
 
-            $averageMark = count($filteredMarks) > 0 ? array_sum($filteredMarks) / count($filteredMarks) : 0;
+            $averageMark = count($filteredMarks) > 0 ? array_sum($filteredMarks) / count($filteredMarks) : null;
 
             $result = Result::updateOrCreate(
                 [
