@@ -18,6 +18,7 @@ use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\ParaGroupController;
 use App\Http\Controllers\PrintController;
 use App\Http\Controllers\QuranQuestionController;
+use App\Http\Controllers\ResultController;
 use App\Http\Controllers\SiteSettingsController;
 use App\Http\Controllers\SmsController;
 use App\Http\Controllers\StudentController;
@@ -144,6 +145,8 @@ Route::get('/print-envelop-final', [PrintController::class, 'PrintEnvelopFinal']
 Route::get('/print-center-envelop', [PrintController::class, 'centerEnvelop']);
 Route::get('/print-seat-number', [PrintController::class, 'seatNumber']);
 Route::get('/center-acknowledgment', [PrintController::class, 'centerAcknowledgment']);
+
+Route::get('/results/student/{roll_number}', [ResultController::class, 'getStudentResult']);
 
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 

@@ -14,4 +14,24 @@ class Result extends Model
     protected $casts = [
         'marks' => 'json',
     ];
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function exam()
+    {
+        return $this->belongsTo(Exam::class);
+    }
+
+    public function zamat()
+    {
+        return $this->belongsTo(Zamat::class);
+    }
+
+    public function examSubject()
+    {
+        return $this->belongsTo(ExamSubject::class);
+    }
 }
