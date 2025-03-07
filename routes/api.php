@@ -147,7 +147,7 @@ Route::get('/print-seat-number', [PrintController::class, 'seatNumber']);
 Route::get('/center-acknowledgment', [PrintController::class, 'centerAcknowledgment']);
 
 Route::get('/results/student/{roll_number}', [ResultController::class, 'getStudentResult']);
-Route::get('/institute/{institute_id}/zamat/{zamat_id}/results', [ResultController::class, 'getInstituteResults']);
+Route::get('/institutes/{institute_id}/zamat/{zamat_id}/exam/{exam_id}/results', [ResultController::class, 'getInstituteResults']);
 
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 

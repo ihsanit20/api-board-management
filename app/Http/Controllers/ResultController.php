@@ -77,6 +77,14 @@ class ResultController extends Controller
         return response()->json($response, 200);
     }
 
+    private function convertToBanglaNumber($number)
+    {
+        $englishDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        $banglaDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+
+        return str_replace($englishDigits, $banglaDigits, $number);
+    }
+
     private function calculateRank($exam_id, $zamat_id, $group_id, $student_id, $total_mark)
     {
         $ranks = Result::whereHas('student', function ($query) {
@@ -95,10 +103,10 @@ class ResultController extends Controller
             })
             ->selectRaw('student_id, SUM(mark) as total_mark')
             ->groupBy('student_id')
+            ->having('total_mark', '>', 0)
             ->orderByDesc('total_mark')
             ->get();
 
-        // ✅ একই নাম্বার থাকলে (ক, খ, গ) যুক্ত করা
         $rank = 1;
         $previous_mark = null;
         $suffix_index = 0;
@@ -106,10 +114,10 @@ class ResultController extends Controller
 
         foreach ($ranks as $key => $rankedStudent) {
             if ($rankedStudent->total_mark !== $previous_mark) {
-                $rank_number = $rank; // নতুন নাম্বার এলে র‍্যাঙ্ক আপডেট হবে
+                $rank_number = $this->convertToBanglaNumber($rank); // বাংলা সংখ্যায় রূপান্তর
                 $suffix_index = 0; // সাফিক্স রিসেট হবে
             } else {
-                $rank_number = $rank . " (" . $suffixes[$suffix_index] . ")"; // একই মার্ক হলে (ক, খ, গ) যোগ হবে
+                $rank_number = $this->convertToBanglaNumber($rank) . " (" . $suffixes[$suffix_index] . ")"; // বাংলা সংখ্যায় রূপান্তর
                 $suffix_index++;
             }
 
@@ -121,7 +129,7 @@ class ResultController extends Controller
             $rank++;
         }
 
-        return null; // যদি কোনো র‌্যাঙ্ক খুঁজে না পাওয়া যায়
+        return null;
     }
 
     private function calculateGrade($percentage)
@@ -139,7 +147,7 @@ class ResultController extends Controller
         }
     }
 
-    public function getInstituteResults($institute_id, $zamat_id)
+    public function getInstituteResults($institute_id, $zamat_id, $exam_id)
     {
         $results = Result::whereHas('student', function ($query) use ($institute_id) {
             $query->whereHas('institute', function ($q) use ($institute_id) {
@@ -149,6 +157,7 @@ class ResultController extends Controller
             ->whereHas('zamat', function ($query) use ($zamat_id) {
                 $query->where('id', $zamat_id);
             })
+            ->where('exam_id', $exam_id) // exam_id দিয়ে ভ্যালিডেশন
             ->with([
                 'examSubject.subject',
                 'student.group',
@@ -167,9 +176,17 @@ class ResultController extends Controller
             ];
         })->sortBy('id')->values();
 
-        $studentsResults = $results->groupBy('student.id')->map(function ($studentResults) use ($subjects) {
+        $group = null;
+        $firstStudent = $results->first()->student;
+        if ($firstStudent && $firstStudent->group) {
+            $group = [
+                'id' => $firstStudent->group->id,
+                'name' => $firstStudent->group->name,
+            ];
+        }
+
+        $studentsResults = $results->groupBy('student.id')->map(function ($studentResults) use ($subjects, $zamat_id) {
             $student = $studentResults->first()->student;
-            $group = optional($student->group);
 
             $marks = $subjects->map(function ($subject) use ($studentResults) {
                 return optional($studentResults->firstWhere('examSubject.subject.id', $subject['id']))->mark ?? 0;
@@ -179,6 +196,7 @@ class ResultController extends Controller
             $full_total_marks = $subjects->count() * 100;
             $percentage = $full_total_marks > 0 ? round(($total_mark / $full_total_marks) * 100, 2) : 0;
             $grade = $this->calculateGrade($percentage);
+            $rank = $this->calculateRank($studentResults->first()->exam->id, $zamat_id, optional($student->group)->id ?? null, $student->id, $total_mark);
 
             return [
                 'student_id' => $student->id,
@@ -188,15 +206,14 @@ class ResultController extends Controller
                 'percentage' => $percentage,
                 'grade' => $grade,
                 'marks' => $marks->values(),
+                'rank' => $rank,
             ];
         })->values();
 
-        $rankedStudents = $studentsResults->sortByDesc('total_mark')->values()->map(function ($student, $index) {
-            $student['rank'] = $index + 1;
-            return $student;
-        });
+        $studentsResults = $studentsResults->sortBy('roll_number')->values();
 
-        return response()->json([
+        // রেসপন্স তৈরি করা
+        $response = [
             'institute' => [
                 'id' => $institute_id,
                 'name' => optional($results->first()->student->institute)->name,
@@ -204,13 +221,21 @@ class ResultController extends Controller
             'zamat' => [
                 'id' => $zamat_id,
                 'name' => optional($results->first()->zamat)->name,
+                'department' => optional($results->first()->zamat->department)->name,
             ],
-            'group' => optional($results->first()->student->group)->exists ? [
-                'id' => optional($results->first()->student->group)->id,
-                'name' => optional($results->first()->student->group)->name,
-            ] : null,
+            'exam' => [
+                'id' => $exam_id,
+                'name' => optional($results->first()->exam)->name, // exam এর নাম যোগ করা হয়েছে
+            ],
             'subjects' => $subjects,
-            'students' => $rankedStudents,
-        ], 200);
+            'students' => $studentsResults,
+        ];
+
+        // যদি গ্রুপ থাকে তাহলে গ্রুপের তথ্য যোগ করা
+        if ($group) {
+            $response['group'] = $group;
+        }
+
+        return response()->json($response, 200);
     }
 }
