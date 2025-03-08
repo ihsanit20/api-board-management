@@ -148,6 +148,7 @@ Route::get('/center-acknowledgment', [PrintController::class, 'centerAcknowledgm
 
 Route::get('/results/student/{roll_number}', [ResultController::class, 'getStudentResult']);
 Route::get('/institutes/{institute_id}/zamat/{zamat_id}/exam/{exam_id}/results', [ResultController::class, 'getInstituteResults']);
+Route::get('/exam/{exam_id}/zamat/{zamat_id}/merit-list/{group_id?}', [ResultController::class, 'getMeritList']);
 
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 
