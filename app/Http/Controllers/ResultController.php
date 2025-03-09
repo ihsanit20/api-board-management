@@ -82,7 +82,26 @@ class ResultController extends Controller
         $englishDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
         $banglaDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
 
-        return str_replace($englishDigits, $banglaDigits, $number);
+        $ordinalSuffixes = [
+            1 => 'ম',
+            2 => 'য়',
+            3 => 'য়',
+            4 => 'র্থ',
+            5 => 'ম',
+            6 => 'ষ্ঠ',
+            7 => 'ম',
+            8 => 'ম',
+            9 => 'ম',
+            10 => 'ম',
+        ];
+
+        $banglaNumber = str_replace($englishDigits, $banglaDigits, $number);
+
+        if (array_key_exists($number, $ordinalSuffixes)) {
+            return $banglaNumber . $ordinalSuffixes[$number];
+        } else {
+            return $banglaNumber . 'তম';
+        }
     }
 
     private function calculateRank($exam_id, $zamat_id, $group_id, $student_id, $total_mark)
@@ -247,11 +266,12 @@ class ResultController extends Controller
 
     public function getMeritList(Request $request, $exam_id, $zamat_id, $group_id = null)
     {
-        $limit = $request->input('limit', 10); // ডিফল্ট সর্বোচ্চ ১০ জন শিক্ষার্থী দেখাবে
+        $limit = $request->input('limit', 10);
 
-        $query = Result::whereHas('zamat', function ($query) use ($zamat_id) {
-            $query->where('id', $zamat_id);
-        })
+        $results = Result::query()
+            ->whereHas('zamat', function ($query) use ($zamat_id) {
+                $query->where('id', $zamat_id);
+            })
             ->whereHas('exam', function ($query) use ($exam_id) {
                 $query->where('id', $exam_id);
             })
@@ -264,64 +284,80 @@ class ResultController extends Controller
                 'student.group',
                 'student.institute'
             ])
-            ->selectRaw('student_id, SUM(mark) as total_mark')
+            ->selectRaw('student_id, SUM(mark) as total_mark, SUM(exam_subjects.full_marks) as full_marks')
+            ->join('exam_subjects', 'results.exam_subject_id', '=', 'exam_subjects.id')
             ->groupBy('student_id')
             ->having('total_mark', '>', 0)
             ->orderByDesc('total_mark')
             ->limit($limit)
             ->get();
 
-        if ($query->isEmpty()) {
+        if ($results->isEmpty()) {
             return response()->json(['message' => 'No merit list found'], 404);
         }
 
-        // ✅ র‌্যাংক গণনা
         $rankedStudents = [];
         $rank = 1;
         $previous_mark = null;
         $suffix_index = 0;
         $suffixes = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', 'ঝ'];
 
-        foreach ($query as $key => $result) {
-            $student = $result->student;
-            $group = optional($student->group);
+        foreach ($results as $key => $result) {
+            if ($key && $result->total_mark !== $previous_mark) {
+                $rank++;
+            }
 
-            // ✅ একই নম্বর থাকলে (ক, খ, গ) যুক্ত করা
+            $student = $result->student;
+
+            $percentage = $result->full_marks > 0 ? round(($result->total_mark / $result->full_marks) * 100, 2) : 0;
+            $grade = $this->calculateGrade($percentage);
+
             if ($result->total_mark !== $previous_mark) {
-                $rank_number = $this->convertToBanglaNumber($rank);
-                $suffix_index = 0;
+                $rank_suffix = "(" . $suffixes[0] . ")";
+                $suffix_index = 1;
             } else {
-                $rank_number = $this->convertToBanglaNumber($rank) . " (" . $suffixes[$suffix_index] . ")";
+                $rank_suffix = "(" . $suffixes[$suffix_index] . ")";
                 $suffix_index++;
             }
 
             $rankedStudents[] = [
-                'rank' => $rank_number,
+                'rank' => $this->convertToBanglaNumber($rank),
+                'suffix' => $rank_suffix,
                 'student_id' => $student->id,
                 'name' => $student->name,
                 'roll_number' => $student->roll_number,
                 'total_mark' => $result->total_mark,
-                'group' => optional($student->group)->name,
+                'percentage' => $percentage,
+                'grade' => $grade,
                 'institute' => optional($student->institute)->name,
                 'institute_code' => optional($student->institute)->institute_code,
             ];
 
             $previous_mark = $result->total_mark;
-            $rank++;
+        }
+
+        $lastIndex = count($rankedStudents) - 1;
+
+        foreach ($rankedStudents as $index => &$rankedStudent) {
+            if ($rankedStudent["suffix"] == "(ক)") {
+                if ($index == $lastIndex || $rankedStudent["total_mark"] != $rankedStudents[$index + 1]["total_mark"]) {
+                    $rankedStudent["suffix"] = "";
+                }
+            }
         }
 
         return response()->json([
             'exam' => [
                 'id' => $exam_id,
-                'name' => optional($query->first()->exam)->name,
+                'name' => optional($results->first()->exam)->name,
             ],
             'zamat' => [
                 'id' => $zamat_id,
-                'name' => optional($query->first()->zamat)->name,
+                'name' => optional($results->first()->zamat)->name,
             ],
             'group' => $group_id ? [
                 'id' => $group_id,
-                'name' => optional($query->first()->student->group)->name,
+                'name' => optional($results->first()->student->group)->name,
             ] : null,
             'students' => $rankedStudents,
         ], 200);
