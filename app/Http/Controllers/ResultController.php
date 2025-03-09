@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Result;
+use App\Models\Student;
 use Illuminate\Http\Request;
 
 class ResultController extends Controller
@@ -45,8 +46,6 @@ class ResultController extends Controller
         $percentage = $full_total_marks > 0 ? round(($total_mark / $full_total_marks) * 100, 2) : 0;
         $grade = $this->calculateGrade($percentage);
 
-        $rank = $this->calculateRank($exam->id, $zamat->id, $group_id, $student->id, $total_mark);
-
         $response = [
             'student' => [
                 'id' => $student->id,
@@ -56,6 +55,7 @@ class ResultController extends Controller
                 'group' => optional($student->group)->name,
                 'institute' => optional($student->institute)->name,
                 'institute_code' => optional($student->institute)->institute_code,
+                'merit' => $student->merit, // ✅ টেবিল থেকে merit দেখানো হচ্ছে
             ],
             'exam' => [
                 'id' => $exam->id,
@@ -71,7 +71,6 @@ class ResultController extends Controller
             'total_mark' => $total_mark,
             'percentage' => $percentage,
             'grade' => $grade,
-            'rank' => $rank,
         ];
 
         return response()->json($response, 200);
@@ -204,7 +203,7 @@ class ResultController extends Controller
             ];
         }
 
-        $studentsResults = $results->groupBy('student.id')->map(function ($studentResults) use ($subjects, $zamat_id) {
+        $studentsResults = $results->groupBy('student.id')->map(function ($studentResults) use ($subjects) {
             $student = $studentResults->first()->student;
 
             $marks = $subjects->map(function ($subject) use ($studentResults) {
@@ -221,7 +220,6 @@ class ResultController extends Controller
 
             $percentage = $full_total_marks > 0 ? round(($total_mark / $full_total_marks) * 100, 2) : 0;
             $grade = $this->calculateGrade($percentage);
-            $rank = $this->calculateRank($studentResults->first()->exam->id, $zamat_id, optional($student->group)->id ?? null, $student->id, $total_mark);
 
             return [
                 'student_id' => $student->id,
@@ -231,7 +229,7 @@ class ResultController extends Controller
                 'percentage' => $percentage,
                 'grade' => $grade,
                 'marks' => $marks->values(),
-                'rank' => $rank,
+                'merit' => $student->merit, // ✅ মেধাক্রম (Merit) স্টুডেন্ট টেবিল থেকে নেওয়া হয়েছে
             ];
         })->values();
 
@@ -263,6 +261,7 @@ class ResultController extends Controller
 
         return response()->json($response, 200);
     }
+
 
     public function getMeritList(Request $request, $exam_id, $zamat_id, $group_id = null)
     {
@@ -361,5 +360,22 @@ class ResultController extends Controller
             ] : null,
             'students' => $rankedStudents,
         ], 200);
+    }
+
+    public function updateMerit(Request $request)
+    {
+        $meritData = $request->input('merit');
+
+        if (!$meritData || !is_array($meritData)) {
+            return response()->json(['message' => 'Invalid merit data'], 400);
+        }
+
+        foreach ($meritData as $data) {
+            if (isset($data['student_id'], $data['rank'])) {
+                Student::where('id', $data['student_id'])->update(['merit' => $data['rank']]);
+            }
+        }
+
+        return response()->json(['message' => 'Merit list updated successfully'], 200);
     }
 }
