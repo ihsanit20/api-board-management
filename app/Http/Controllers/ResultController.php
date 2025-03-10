@@ -37,11 +37,14 @@ class ResultController extends Controller
                 'name' => $result->examSubject->subject->name,
                 'full_marks' => $result->examSubject->full_marks,
                 'pass_marks' => $result->examSubject->pass_marks,
-                'mark' => (float) $result->mark,
+                'mark' => $result->mark ?? null, // ✅ এখন null থাকলে null-ই থাকবে, 0 থাকলে 0 থাকবে
             ];
         })->sortBy('id')->values();
 
-        $total_mark = $subjects->sum('mark');
+        $total_mark = $subjects->sum(function ($subject) {
+            return $subject['mark'] !== null ? $subject['mark'] : 0; // ✅ null থাকলে যোগ করবে না
+        });
+
         $full_total_marks = $subjects->sum('full_marks');
         $percentage = $full_total_marks > 0 ? round(($total_mark / $full_total_marks) * 100, 2) : 0;
         $grade = $this->calculateGrade($percentage);
@@ -55,7 +58,7 @@ class ResultController extends Controller
                 'group' => optional($student->group)->name,
                 'institute' => optional($student->institute)->name,
                 'institute_code' => optional($student->institute)->institute_code,
-                'merit' => $student->merit, // ✅ টেবিল থেকে merit দেখানো হচ্ছে
+                'merit' => $student->merit,
             ],
             'exam' => [
                 'id' => $exam->id,
@@ -75,6 +78,7 @@ class ResultController extends Controller
 
         return response()->json($response, 200);
     }
+
 
     private function convertToBanglaNumber($number)
     {
@@ -101,53 +105,6 @@ class ResultController extends Controller
         } else {
             return $banglaNumber . 'তম';
         }
-    }
-
-    private function calculateRank($exam_id, $zamat_id, $group_id, $student_id, $total_mark)
-    {
-        $ranks = Result::whereHas('student', function ($query) {
-            $query->whereNotNull('roll_number');
-        })
-            ->whereHas('zamat', function ($query) use ($zamat_id) {
-                $query->where('id', $zamat_id);
-            })
-            ->whereHas('exam', function ($query) use ($exam_id) {
-                $query->where('id', $exam_id);
-            })
-            ->when($group_id, function ($query) use ($group_id) { // ✅ গ্রুপ ফিল্টার (যদি গ্রুপ থাকে)
-                return $query->whereHas('student.group', function ($q) use ($group_id) {
-                    $q->where('id', $group_id);
-                });
-            })
-            ->selectRaw('student_id, SUM(mark) as total_mark')
-            ->groupBy('student_id')
-            ->having('total_mark', '>', 0)
-            ->orderByDesc('total_mark')
-            ->get();
-
-        $rank = 1;
-        $previous_mark = null;
-        $suffix_index = 0;
-        $suffixes = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', 'ঝ']; // ✅ একই মার্ক থাকলে এভাবে দেখাবে: 1(ক), 1(খ) ইত্যাদি
-
-        foreach ($ranks as $key => $rankedStudent) {
-            if ($rankedStudent->total_mark !== $previous_mark) {
-                $rank_number = $this->convertToBanglaNumber($rank); // বাংলা সংখ্যায় রূপান্তর
-                $suffix_index = 0; // সাফিক্স রিসেট হবে
-            } else {
-                $rank_number = $this->convertToBanglaNumber($rank) . " (" . $suffixes[$suffix_index] . ")"; // বাংলা সংখ্যায় রূপান্তর
-                $suffix_index++;
-            }
-
-            if ($rankedStudent->student_id == $student_id) {
-                return $rank_number;
-            }
-
-            $previous_mark = $rankedStudent->total_mark;
-            $rank++;
-        }
-
-        return null;
     }
 
     private function calculateGrade($percentage)
@@ -206,9 +163,15 @@ class ResultController extends Controller
         $studentsResults = $results->groupBy('student.id')->map(function ($studentResults) use ($subjects) {
             $student = $studentResults->first()->student;
 
+            // $marks = $subjects->map(function ($subject) use ($studentResults) {
+            //     return optional($studentResults->firstWhere('examSubject.subject.id', $subject['id']))->mark ?? 0;
+            // });
+
             $marks = $subjects->map(function ($subject) use ($studentResults) {
-                return optional($studentResults->firstWhere('examSubject.subject.id', $subject['id']))->mark ?? 0;
+                $mark = optional($studentResults->firstWhere('examSubject.subject.id', $subject['id']))->mark;
+                return $mark === null ? null : (float) $mark; // `null` থাকলে সেটাই রিটার্ন করবে
             });
+
 
             $total_mark = $marks->sum();
 
@@ -281,11 +244,16 @@ class ResultController extends Controller
             })
             ->with([
                 'student.group',
-                'student.institute'
+                'student.institute',
+                'exam:id,name',
+                'zamat' => function ($query) {
+                    $query->select('id', 'name', 'department_id')->with('department:id,name');
+                }
             ])
+            ->select('results.student_id', 'results.exam_id', 'results.zamat_id')
             ->selectRaw('student_id, SUM(mark) as total_mark, SUM(exam_subjects.full_marks) as full_marks')
             ->join('exam_subjects', 'results.exam_subject_id', '=', 'exam_subjects.id')
-            ->groupBy('student_id')
+            ->groupBy('results.student_id', 'results.exam_id', 'results.zamat_id')
             ->having('total_mark', '>', 0)
             ->orderByDesc('total_mark')
             ->limit($limit)
@@ -307,7 +275,6 @@ class ResultController extends Controller
             }
 
             $student = $result->student;
-
             $percentage = $result->full_marks > 0 ? round(($result->total_mark / $result->full_marks) * 100, 2) : 0;
             $grade = $this->calculateGrade($percentage);
 
@@ -336,7 +303,6 @@ class ResultController extends Controller
         }
 
         $lastIndex = count($rankedStudents) - 1;
-
         foreach ($rankedStudents as $index => &$rankedStudent) {
             if ($rankedStudent["suffix"] == "(ক)") {
                 if ($index == $lastIndex || $rankedStudent["total_mark"] != $rankedStudents[$index + 1]["total_mark"]) {
@@ -353,6 +319,7 @@ class ResultController extends Controller
             'zamat' => [
                 'id' => $zamat_id,
                 'name' => optional($results->first()->zamat)->name,
+                'department' => optional($results->first()->zamat->department)->name, // ✅ এখন ঠিকমতো department আসবে!
             ],
             'group' => $group_id ? [
                 'id' => $group_id,
@@ -377,5 +344,78 @@ class ResultController extends Controller
         }
 
         return response()->json(['message' => 'Merit list updated successfully'], 200);
+    }
+
+    public function printMeritList(Request $request, $exam_id, $zamat_id, $group_id = null)
+    {
+        $results = Result::query()
+            ->whereHas('student', function ($query) {
+                $query->whereNotNull('merit');
+            })
+            ->whereHas('zamat', function ($query) use ($zamat_id) {
+                $query->where('id', $zamat_id);
+            })
+            ->whereHas('exam', function ($query) use ($exam_id) {
+                $query->where('id', $exam_id);
+            })
+            ->when($group_id, function ($query) use ($group_id) {
+                return $query->whereHas('student.group', function ($q) use ($group_id) {
+                    $q->where('id', $group_id);
+                });
+            })
+            ->with([
+                'student.group',
+                'student.institute',
+                'exam:id,name',
+                'zamat' => function ($query) {
+                    $query->select('id', 'name', 'department_id')->with('department:id,name');
+                }
+            ])
+            ->select('results.student_id', 'results.exam_id', 'results.zamat_id')
+            ->selectRaw('student_id, SUM(mark) as total_mark, SUM(exam_subjects.full_marks) as full_marks')
+            ->join('exam_subjects', 'results.exam_subject_id', '=', 'exam_subjects.id')
+            ->groupBy('results.student_id', 'results.exam_id', 'results.zamat_id')
+            ->having('total_mark', '>', 0)
+            ->orderByDesc('total_mark')
+            ->get();
+
+        if ($results->isEmpty()) {
+            return response()->json(['message' => 'No merit list found'], 404);
+        }
+
+        $studentsList = $results->map(function ($result) {
+            $student = $result->student;
+            $percentage = $result->full_marks > 0 ? round(($result->total_mark / $result->full_marks) * 100, 2) : 0;
+            $grade = $this->calculateGrade($percentage);
+
+            return [
+                'student_id' => $student->id,
+                'name' => $student->name,
+                'roll_number' => $student->roll_number,
+                'total_mark' => $result->total_mark,
+                'percentage' => $percentage,
+                'grade' => $grade,
+                'institute' => optional($student->institute)->name,
+                'institute_code' => optional($student->institute)->institute_code,
+                'merit' => $student->merit,
+            ];
+        });
+
+        return response()->json([
+            'exam' => [
+                'id' => $exam_id,
+                'name' => optional($results->first()->exam)->name,
+            ],
+            'zamat' => [
+                'id' => $zamat_id,
+                'name' => optional($results->first()->zamat)->name,
+                'department' => optional($results->first()->zamat->department)->name, // ✅ সঠিকভাবে ডিপার্টমেন্ট লোড করা হয়েছে
+            ],
+            'group' => $group_id ? [
+                'id' => $group_id,
+                'name' => optional($results->first()->student->group)->name,
+            ] : null,
+            'students' => $studentsList,
+        ], 200);
     }
 }
