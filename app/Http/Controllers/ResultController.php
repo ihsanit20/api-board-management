@@ -268,7 +268,7 @@ class ResultController extends Controller
         $rank = 1;
         $previous_mark = null;
         $suffix_index = 0;
-        $suffixes = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', 'ঝ'];
+        $suffixes = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', 'ঝ', 'ঞ', 'ট', 'ঠ', 'ড', 'ঢ', 'ণ', 'ত', 'থ', 'দ', 'ধ', 'ন', 'প', 'ফ', 'ব', 'ভ', 'ম', 'য', 'র', 'ল', 'শ', 'ষ', 'স', 'হ', 'ড়', 'ঢ়', 'য়'];
 
         foreach ($results as $key => $result) {
             if ($key && $result->total_mark !== $previous_mark) {
@@ -283,7 +283,7 @@ class ResultController extends Controller
                 $rank_suffix = "(" . $suffixes[0] . ")";
                 $suffix_index = 1;
             } else {
-                $rank_suffix = "(" . $suffixes[$suffix_index] . ")";
+                $rank_suffix = "(" . ($suffixes[$suffix_index] ?? '-') . ")";
                 $suffix_index++;
             }
 
