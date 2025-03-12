@@ -112,9 +112,9 @@ class ResultController extends Controller
         if ($percentage >= 80) {
             return 'মুমতায';
         } elseif ($percentage >= 65) {
-            return 'যায়্যিদ জিদ্দান';
+            return 'জায়্যিদ জিদ্দান';
         } elseif ($percentage >= 50) {
-            return 'যায়্যিদ';
+            return 'জায়্যিদ';
         } elseif ($percentage >= 35) {
             return 'মাকবুল';
         } else {
@@ -256,6 +256,7 @@ class ResultController extends Controller
             ->groupBy('results.student_id', 'results.exam_id', 'results.zamat_id')
             ->having('total_mark', '>', 0)
             ->orderByDesc('total_mark')
+            ->orderBy('results.student_id')
             ->limit($limit)
             ->get();
 
@@ -377,6 +378,7 @@ class ResultController extends Controller
             ->groupBy('results.student_id', 'results.exam_id', 'results.zamat_id')
             ->having('total_mark', '>', 0)
             ->orderByDesc('total_mark')
+            ->orderBy('results.student_id')
             ->get();
 
         if ($results->isEmpty()) {
