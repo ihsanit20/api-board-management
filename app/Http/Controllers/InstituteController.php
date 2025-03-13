@@ -47,7 +47,18 @@ class InstituteController extends Controller
             'area_id' => 'required|exists:areas,id',
         ]);
 
-        $institutes = Institute::where('area_id', $request->input('area_id'))
+        $institutes = Institute::query()
+            ->where('area_id', $request->input('area_id'))
+            ->when($request->zamat_id, function ($query, $zamat_id) {
+                return $query->whereHas('students', function ($query) use ($zamat_id) {
+                    $query->where('zamat_id', $zamat_id);
+                });
+            })
+            ->when($request->group_id, function ($query, $group_id) {
+                return $query->whereHas('students', function ($query) use ($group_id) {
+                    $query->where('group_id', $group_id);
+                });
+            })
             ->select('id','name', 'institute_code', 'phone')
             ->oldest('institute_code')
             ->get();
