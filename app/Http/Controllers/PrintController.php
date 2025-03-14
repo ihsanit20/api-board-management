@@ -245,4 +245,57 @@ class PrintController extends Controller
 
         return response()->json($data);
     }
+
+    public function areaStudentCount($examId, $areaId)
+    {
+        $exam = Exam::find($examId);
+
+        if (!$exam) {
+            return response()->json(['message' => 'Invalid exam ID'], 400);
+        }
+
+        if ($areaId) {
+            $data = Student::with(['area', 'institute', 'zamat'])
+                ->select(
+                    'area_id',
+                    'institute_id',
+                    'zamat_id',
+                    DB::raw('COUNT(id) as student_count')
+                )
+                ->where('exam_id', $examId)
+                ->where('area_id', $areaId)
+                ->whereNotNull('roll_number')
+                ->groupBy('area_id', 'institute_id', 'zamat_id')
+                ->get()
+                ->groupBy('area_id')
+                ->map(function ($areaGroup) use ($exam) {
+                    $areaName = optional($areaGroup->first()->area)->name;
+                    $instituteCounts = $areaGroup->groupBy('institute_id')->map(function ($instituteGroup) {
+                        return [
+                            'institute_name' => optional($instituteGroup->first()->institute)->name,
+                            'zamats' => $instituteGroup->groupBy('zamat_id')->map(function ($zamatGroup, $zamatId) {
+                                $zamatName = optional($zamatGroup->first()->zamat)->name;
+                                return [
+                                    'zamat_name' => $zamatName,
+                                    'student_count' => $zamatGroup->sum('student_count')
+                                ];
+                            })->values() // Ensure zamats are returned as a proper array
+                        ];
+                    })->values(); // Ensure institutes are returned as a proper array
+
+                    return [
+                        'exam_name' => $exam->name,
+                        'area' => $areaName,
+                        'Total' => $areaGroup->sum('student_count'),
+                        'institutes' => $instituteCounts
+                    ];
+                })
+                ->values() // Remove the area_id key and return only the values
+                ->first(); // Since we are filtering by a single area_id, we can take the first item
+
+            return response()->json($data);
+        } else {
+            return response()->json(['message' => 'Area ID is required'], 400);
+        }
+    }
 }

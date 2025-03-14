@@ -145,12 +145,12 @@ Route::get('/print-envelop-final', [PrintController::class, 'PrintEnvelopFinal']
 Route::get('/print-center-envelop', [PrintController::class, 'centerEnvelop']);
 Route::get('/print-seat-number', [PrintController::class, 'seatNumber']);
 Route::get('/center-acknowledgment', [PrintController::class, 'centerAcknowledgment']);
+Route::get('/area-student-count/{exam_id}/{area_id}', [PrintController::class, 'areaStudentCount']);
+
 
 Route::get('/results/student/{roll_number}', [ResultController::class, 'getStudentResult']);
 Route::get('/institutes/{institute_id}/zamat/{zamat_id}/exam/{exam_id}/results', [ResultController::class, 'getInstituteResults']);
-Route::get('/exam/{exam_id}/zamat/{zamat_id}/merit-list/{group_id?}', [ResultController::class, 'getMeritList']);
 Route::get('/print/exam/{exam_id}/zamat/{zamat_id}/merit-list/{group_id?}', [ResultController::class, 'printMeritList']);
-Route::post('/students/update-merit', [ResultController::class, 'updateMerit']);
 
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 
@@ -203,6 +203,9 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
 
         Route::post('/para-groups', [ParaGroupController::class, 'store']);
         Route::put('/para-groups/{id}', [ParaGroupController::class, 'update']);
+
+        Route::get('/exam/{exam_id}/zamat/{zamat_id}/merit-list/{group_id?}', [ResultController::class, 'getMeritList']);
+        Route::post('/students/update-merit', [ResultController::class, 'updateMerit']);
     });
 
     Route::middleware('role:Super Admin,Developer')->group(function () {

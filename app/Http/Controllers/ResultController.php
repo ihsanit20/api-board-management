@@ -79,7 +79,6 @@ class ResultController extends Controller
         return response()->json($response, 200);
     }
 
-
     private function convertToBanglaNumber($number)
     {
         $englishDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
@@ -109,6 +108,9 @@ class ResultController extends Controller
 
     private function calculateGrade($percentage)
     {
+        if ($percentage == 0 || $percentage === null) {
+            return 'অনুপস্থিত';
+        }
         if ($percentage >= 80) {
             return 'মুমতায';
         } elseif ($percentage >= 65) {
