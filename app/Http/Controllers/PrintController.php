@@ -270,18 +270,24 @@ class PrintController extends Controller
                 ->groupBy('area_id')
                 ->map(function ($areaGroup) use ($exam) {
                     $areaName = optional($areaGroup->first()->area)->name;
+
                     $instituteCounts = $areaGroup->groupBy('institute_id')->map(function ($instituteGroup) {
+                        $totalStudentCount = $instituteGroup->sum('student_count'); // Total student count for the institute
+
                         return [
+                            'institute_code' => optional($instituteGroup->first()->institute)->institute_code,
                             'institute_name' => optional($instituteGroup->first()->institute)->name,
+                            'institute_phone' => optional($instituteGroup->first()->institute)->phone,
+                            'total_student_count' => $totalStudentCount, // Added total student count here
                             'zamats' => $instituteGroup->groupBy('zamat_id')->map(function ($zamatGroup, $zamatId) {
                                 $zamatName = optional($zamatGroup->first()->zamat)->name;
                                 return [
                                     'zamat_name' => $zamatName,
                                     'student_count' => $zamatGroup->sum('student_count')
                                 ];
-                            })->values() // Ensure zamats are returned as a proper array
+                            })->sortBy('zamat_id')->values() // Sort zamats by their ID
                         ];
-                    })->values(); // Ensure institutes are returned as a proper array
+                    })->sortBy('institute_code')->values(); // Sort institutes by their ID
 
                     return [
                         'exam_name' => $exam->name,
