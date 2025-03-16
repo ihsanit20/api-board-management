@@ -79,7 +79,7 @@ class ResultController extends Controller
             'full_total_marks' => $full_total_marks,
             'total_mark' => $total_mark,
             'percentage' => $percentage,
-            'mark' => $result->mark ?? null,
+            'grade' => $grade,
         ];
 
         return response()->json($response, 200);
@@ -129,6 +129,7 @@ class ResultController extends Controller
             return 'রাসিব';
         }
     }
+
     public function getInstituteResults($institute_id, $zamat_id, $exam_id)
     {
         $results = Result::whereHas('student', function ($query) use ($institute_id) {
