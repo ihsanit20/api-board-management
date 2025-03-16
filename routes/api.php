@@ -19,6 +19,7 @@ use App\Http\Controllers\ParaGroupController;
 use App\Http\Controllers\PrintController;
 use App\Http\Controllers\QuranQuestionController;
 use App\Http\Controllers\ResultController;
+use App\Http\Controllers\ResultSummaryController;
 use App\Http\Controllers\SiteSettingsController;
 use App\Http\Controllers\SmsController;
 use App\Http\Controllers\StudentController;
@@ -147,10 +148,11 @@ Route::get('/print-seat-number', [PrintController::class, 'seatNumber']);
 Route::get('/center-acknowledgment', [PrintController::class, 'centerAcknowledgment']);
 Route::get('/area-student-count/{exam_id}/{area_id}', [PrintController::class, 'areaStudentCount']);
 
-
 Route::get('/results/student/{roll_number}', [ResultController::class, 'getStudentResult']);
 Route::get('/institutes/{institute_id}/zamat/{zamat_id}/exam/{exam_id}/results', [ResultController::class, 'getInstituteResults']);
 Route::get('/print/exam/{exam_id}/zamat/{zamat_id}/merit-list/{group_id?}', [ResultController::class, 'printMeritList']);
+
+Route::get('/summary/{exam_id}', [ResultSummaryController::class, 'summaryPrint']);
 
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 
