@@ -46,8 +46,14 @@ class ResultController extends Controller
         });
 
         $full_total_marks = $subjects->sum('full_marks');
+
         $percentage = $full_total_marks > 0 ? round(($total_mark / $full_total_marks) * 100, 2) : 0;
+
         $grade = $this->calculateGrade($percentage);
+
+        if ($grade === null || $subjects->contains('mark', null)) {
+            $grade = null;
+        }
 
         $response = [
             'student' => [
@@ -73,7 +79,7 @@ class ResultController extends Controller
             'full_total_marks' => $full_total_marks,
             'total_mark' => $total_mark,
             'percentage' => $percentage,
-            'grade' => $grade,
+            'mark' => $result->mark ?? null,
         ];
 
         return response()->json($response, 200);
@@ -123,7 +129,6 @@ class ResultController extends Controller
             return 'রাসিব';
         }
     }
-
     public function getInstituteResults($institute_id, $zamat_id, $exam_id)
     {
         $results = Result::whereHas('student', function ($query) use ($institute_id) {
@@ -137,6 +142,7 @@ class ResultController extends Controller
             ->where('exam_id', $exam_id) // exam_id দিয়ে ভ্যালিডেশন
             ->with([
                 'examSubject.subject',
+                'examSubject',
                 'student.group',
                 'student.institute'
             ])
@@ -146,12 +152,16 @@ class ResultController extends Controller
             return response()->json(['message' => 'No results found'], 404);
         }
 
-        $subjects = $results->pluck('examSubject.subject')->unique('id')->map(function ($subject) {
+        $subjects = $results->pluck('examSubject.subject')->unique('id')->map(function ($subject) use ($results) {
+            $examSubject = $results->firstWhere('examSubject.subject.id', $subject->id)->examSubject;
             return [
                 'id' => $subject->id,
-                'name' => $subject->name
+                'name' => $subject->name,
+                'full_marks' => $examSubject ? $examSubject->full_marks : null,
+                'pass_marks' => $examSubject ? $examSubject->pass_marks : null
             ];
-        })->sortBy('id')->values();
+        })
+            ->sortBy('id')->values();
 
         $group = null;
         $firstStudent = $results->first()->student;
@@ -165,15 +175,14 @@ class ResultController extends Controller
         $studentsResults = $results->groupBy('student.id')->map(function ($studentResults) use ($subjects) {
             $student = $studentResults->first()->student;
 
-            // $marks = $subjects->map(function ($subject) use ($studentResults) {
-            //     return optional($studentResults->firstWhere('examSubject.subject.id', $subject['id']))->mark ?? 0;
-            // });
+            $hasNullMark = $studentResults->contains(function ($result) {
+                return $result->mark === null;
+            });
 
             $marks = $subjects->map(function ($subject) use ($studentResults) {
                 $mark = optional($studentResults->firstWhere('examSubject.subject.id', $subject['id']))->mark;
                 return $mark === null ? null : (float) $mark; // `null` থাকলে সেটাই রিটার্ন করবে
             });
-
 
             $total_mark = $marks->sum();
 
@@ -184,7 +193,8 @@ class ResultController extends Controller
             $full_total_marks = $full_marks->sum();
 
             $percentage = $full_total_marks > 0 ? round(($total_mark / $full_total_marks) * 100, 2) : 0;
-            $grade = $this->calculateGrade($percentage);
+
+            $grade = $hasNullMark ? null : $this->calculateGrade($percentage);
 
             return [
                 'student_id' => $student->id,
@@ -194,13 +204,12 @@ class ResultController extends Controller
                 'percentage' => $percentage,
                 'grade' => $grade,
                 'marks' => $marks->values(),
-                'merit' => $student->merit, // ✅ মেধাক্রম (Merit) স্টুডেন্ট টেবিল থেকে নেওয়া হয়েছে
+                'merit' => $student->merit,
             ];
         })->values();
 
         $studentsResults = $studentsResults->sortBy('roll_number')->values();
 
-        // রেসপন্স তৈরি করা
         $response = [
             'institute' => [
                 'id' => $institute_id,
@@ -213,20 +222,18 @@ class ResultController extends Controller
             ],
             'exam' => [
                 'id' => $exam_id,
-                'name' => optional($results->first()->exam)->name, // exam এর নাম যোগ করা হয়েছে
+                'name' => optional($results->first()->exam)->name,
             ],
             'subjects' => $subjects,
             'students' => $studentsResults,
         ];
 
-        // যদি গ্রুপ থাকে তাহলে গ্রুপের তথ্য যোগ করা
         if ($group) {
             $response['group'] = $group;
         }
 
         return response()->json($response, 200);
     }
-
 
     public function getMeritList(Request $request, $exam_id, $zamat_id, $group_id = null)
     {
