@@ -215,6 +215,7 @@ class ResultController extends Controller
             'institute' => [
                 'id' => $institute_id,
                 'name' => optional($results->first()->student->institute)->name,
+                'institute_code' => optional($results->first()->student->institute)->institute_code,
             ],
             'zamat' => [
                 'id' => $zamat_id,
