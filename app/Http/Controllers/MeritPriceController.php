@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Exam;
 use App\Models\MeritPrice;
+use App\Models\Student;
 use Illuminate\Http\Request;
 
 class MeritPriceController extends Controller
@@ -82,10 +83,15 @@ class MeritPriceController extends Controller
         $exam_id = $request->exam_id;
         $area_id = $request->area_id;
 
-        $students = \App\Models\Student::where('exam_id', $exam_id)
-            ->where('area_id', $area_id)
+        $students = Student::query()
+            ->with([
+                'institute:id,name',
+                'zamat:id,name',
+                'zamat.department'
+            ])
             ->whereNotNull('merit')
-            ->with(['institute:id,name', 'zamat:id,name', 'zamat.department'])
+            ->where('exam_id', $exam_id)
+            ->where('area_id', $area_id)
             ->get();
 
         if ($students->isEmpty()) {
@@ -101,8 +107,13 @@ class MeritPriceController extends Controller
                 $zamat = optional($zamatStudents->first()->zamat);
 
                 $studentsList = $zamatStudents->map(function ($student) use ($exam_id) {
-                    // Merit → numeric only (remove suffix)
-                    $numericMerit = (int) filter_var($student->merit, FILTER_SANITIZE_NUMBER_INT);
+                    // Merit → numeric only (remove suffix and handle Bangla numerals)
+                    $numericMerit = (int) preg_replace('/[^\d]/u', '', str_replace(
+                        ['১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯', '০'], 
+                        ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'], 
+                        $student->merit
+                    ));
+
                     $merit_name = match ($numericMerit) {
                         1 => '১ম',
                         2 => '২য়',
@@ -120,6 +131,7 @@ class MeritPriceController extends Controller
                         'name' => $student->name,
                         'roll_number' => $student->roll_number,
                         'merit' => $student->merit,
+                        'merit_int' => $numericMerit,
                         'merit_name' => $merit_name,
                         'price_amount' => $meritPrice?->price_amount ?? 0,
                     ];
@@ -129,7 +141,7 @@ class MeritPriceController extends Controller
                     'id' => $zamat->id,
                     'name' => $zamat->name,
                     'department' => optional($zamat->department)->name,
-                    'students' => $studentsList,
+                    'students' => $studentsList->sortBy('merit_int')->values(),
                 ];
             })->values();
 
