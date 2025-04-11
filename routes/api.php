@@ -14,6 +14,7 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\InstituteController;
 use App\Http\Controllers\LastExamResultController;
 use App\Http\Controllers\LetterDistributionCenterController;
+use App\Http\Controllers\MeritPriceController;
 use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\ParaGroupController;
 use App\Http\Controllers\PrintController;
@@ -208,6 +209,10 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
 
         Route::get('/exam/{exam_id}/zamat/{zamat_id}/merit-list/{group_id?}', [ResultController::class, 'getMeritList']);
         Route::post('/students/update-merit', [ResultController::class, 'updateMerit']);
+
+        Route::get('/merit-prices', [MeritPriceController::class, 'index']);
+        Route::post('/merit-prices', [MeritPriceController::class, 'store']);
+        Route::put('/merit-prices/{meritPrice}', [MeritPriceController::class, 'update']);
     });
 
     Route::middleware('role:Super Admin,Developer')->group(function () {
