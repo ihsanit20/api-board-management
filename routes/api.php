@@ -213,6 +213,7 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::get('/merit-prices', [MeritPriceController::class, 'index']);
         Route::post('/merit-prices', [MeritPriceController::class, 'store']);
         Route::put('/merit-prices/{meritPrice}', [MeritPriceController::class, 'update']);
+        Route::get('/student-merit-price', [MeritPriceController::class, 'StudentMeritPrice']);
     });
 
     Route::middleware('role:Super Admin,Developer')->group(function () {
