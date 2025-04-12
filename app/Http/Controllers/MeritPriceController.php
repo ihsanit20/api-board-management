@@ -84,11 +84,7 @@ class MeritPriceController extends Controller
         $area_id = $request->area_id;
 
         $students = Student::query()
-            ->with([
-                'institute:id,name',
-                'zamat:id,name',
-                'zamat.department'
-            ])
+            ->with(['institute:id,name', 'zamat:id,name', 'zamat.department'])
             ->whereNotNull('merit')
             ->where('exam_id', $exam_id)
             ->where('area_id', $area_id)
@@ -98,57 +94,49 @@ class MeritPriceController extends Controller
             return response()->json(['message' => 'No students with merit found'], 404);
         }
 
-        // Group by institute
+        // 🔁 Group by institute only
         $institutes = $students->groupBy('institute_id')->map(function ($instituteStudents, $institute_id) use ($exam_id) {
             $institute = optional($instituteStudents->first()->institute);
 
-            // Group by zamat inside each institute
-            $zamats = $instituteStudents->groupBy('zamat_id')->map(function ($zamatStudents, $zamat_id) use ($exam_id) {
-                $zamat = optional($zamatStudents->first()->zamat);
+            // 🔃 All students under this institute, ordered by zamat_id
+            $studentsList = $instituteStudents->map(function ($student) use ($exam_id) {
+                // Numeric merit (convert Bangla to English and remove suffix)
+                $numericMerit = (int) preg_replace('/[^\d]/u', '', str_replace(
+                    ['১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯', '০'],
+                    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+                    $student->merit
+                ));
 
-                $studentsList = $zamatStudents->map(function ($student) use ($exam_id) {
-                    // Merit → numeric only (remove suffix and handle Bangla numerals)
-                    $numericMerit = (int) preg_replace('/[^\d]/u', '', str_replace(
-                        ['১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯', '০'], 
-                        ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'], 
-                        $student->merit
-                    ));
+                $merit_name = match ($numericMerit) {
+                    1 => '১ম',
+                    2 => '২য়',
+                    3 => '৩য়',
+                    default => 'অন্যান্য',
+                };
 
-                    $merit_name = match ($numericMerit) {
-                        1 => '১ম',
-                        2 => '২য়',
-                        3 => '৩য়',
-                        default => 'অন্যান্য',
-                    };
-
-                    $meritPrice = MeritPrice::where('exam_id', $exam_id)
-                        ->where('zamat_id', $student->zamat_id)
-                        ->where('merit_name', $merit_name)
-                        ->first();
-
-                    return [
-                        'id' => $student->id,
-                        'name' => $student->name,
-                        'roll_number' => $student->roll_number,
-                        'merit' => $student->merit,
-                        'merit_int' => $numericMerit,
-                        'merit_name' => $merit_name,
-                        'price_amount' => $meritPrice?->price_amount ?? 0,
-                    ];
-                })->values();
+                $meritPrice = MeritPrice::where('exam_id', $exam_id)
+                    ->where('zamat_id', $student->zamat_id)
+                    ->where('merit_name', $merit_name)
+                    ->first();
 
                 return [
-                    'id' => $zamat->id,
-                    'name' => $zamat->name,
-                    'department' => optional($zamat->department)->name,
-                    'students' => $studentsList->sortBy('merit_int')->values(),
+                    'id' => $student->id,
+                    'name' => $student->name,
+                    'roll_number' => $student->roll_number,
+                    'merit' => $student->merit,
+                    'merit_int' => $numericMerit,
+                    'merit_name' => $merit_name,
+                    'price_amount' => $meritPrice?->price_amount ?? 0,
+                    'zamat' => optional($student->zamat)->name,
+                    'zamat_id' => $student->zamat_id,
+                    'department' => optional($student->zamat->department)->name,
                 ];
-            })->values();
+            })->sortBy('zamat_id')->values();
 
             return [
                 'id' => $institute->id,
                 'name' => $institute->name,
-                'zamats' => $zamats,
+                'students' => $studentsList,
             ];
         })->values();
 
