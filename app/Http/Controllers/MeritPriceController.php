@@ -84,7 +84,7 @@ class MeritPriceController extends Controller
         $area_id = $request->area_id;
 
         $students = Student::query()
-            ->with(['institute:id,name', 'zamat:id,name', 'zamat.department'])
+            ->with(['institute:id,name,phone,institute_code', 'zamat:id,name', 'zamat.department'])
             ->whereNotNull('merit')
             ->where('exam_id', $exam_id)
             ->where('area_id', $area_id)
@@ -136,6 +136,8 @@ class MeritPriceController extends Controller
             return [
                 'id' => $institute->id,
                 'name' => $institute->name,
+                'code' => $institute->institute_code,
+                'phone' => $institute->phone,
                 'students' => $studentsList,
             ];
         })->values();
