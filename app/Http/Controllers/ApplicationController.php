@@ -29,26 +29,26 @@ class ApplicationController extends Controller
                 'approvedBy:id,name',
                 'group:id,name'
             ]);
-    
+
         if ($request->has('zamat_id') && $request->zamat_id) {
             $query->where('zamat_id', $request->zamat_id);
         }
-    
+
         if ($request->has('institute_code') && $request->institute_code) {
             $query->whereHas('institute', function ($q) use ($request) {
                 $q->where('institute_code', $request->institute_code);
             });
         }
-    
+
         if ($request->has('application_id') && $request->application_id) {
             $query->where('id', $request->application_id);
         }
-    
-        $perPage = $request->input('per_page', 15); 
-    
+
+        $perPage = $request->input('per_page', 15);
+
         if ($perPage === 'all') {
             $applications = $query->latest('id')->get();
-    
+
             return response()->json([
                 'data' => ApplicationResource::collection($applications),
                 'total' => $applications->count(),
@@ -69,7 +69,7 @@ class ApplicationController extends Controller
             'current_page' => $applications->currentPage(), // বর্তমান পেজ নম্বর
             'last_page' => $applications->lastPage(), // মোট পেজ সংখ্যা
         ]);
-    }    
+    }
 
     public function printApplications(Request $request)
     {
@@ -83,7 +83,7 @@ class ApplicationController extends Controller
                 'submittedBy:id,name',
                 'approvedBy:id,name',
                 'group:id,name',
-                'students' 
+                'students'
             ]);
 
         // Apply filters based on request parameters
@@ -114,20 +114,20 @@ class ApplicationController extends Controller
         // JSON response for print
         return response()->json($applications);
     }
-    
+
     public function getApplicationCounts(Request $request)
     {
-       
+
         $query = Application::query();
-    
+
         $totalApplications = $query->count();
-    
+
         $pendingApplications = (clone $query)->where('payment_status', 'Pending')->count();
-    
+
         $paidApplications = (clone $query)->where('payment_status', 'Paid')->count();
 
         $totalStudents = (clone $query)->selectRaw('SUM(JSON_LENGTH(students)) as total_students')->value('total_students');
-    
+
         return response()->json([
             'totalApplications' => $totalApplications,
             'pendingApplications' => $pendingApplications,
@@ -135,7 +135,7 @@ class ApplicationController extends Controller
             'totalStudents' => (int) $totalStudents
         ]);
     }
-    
+
     public function getZamatWiseCounts()
     {
         // Fetch counts of applications and student count grouped by zamat_id
@@ -146,7 +146,7 @@ class ApplicationController extends Controller
             ->groupBy('zamat_id')
             ->with('zamat:id,name')
             ->get();
-    
+
         // Format the response with zamat name and counts
         $formattedCounts = $zamatCounts->map(function ($item) {
             return [
@@ -156,11 +156,11 @@ class ApplicationController extends Controller
                 'total_students' => (int) $item->total_students,
             ];
         });
-    
+
         // Return JSON response
         return response()->json($formattedCounts);
     }
-    
+
     public function getUserWiseCounts()
     {
         // Fetch counts of applications grouped by submitted_by
@@ -171,7 +171,7 @@ class ApplicationController extends Controller
             ->groupBy('submitted_by')
             ->with(['submittedBy:id,name']) // Assuming submittedBy is a user relationship
             ->get();
-    
+
         // Format the response with user names and counts
         $formattedCounts = $userCounts->map(function ($item) {
             return [
@@ -181,11 +181,11 @@ class ApplicationController extends Controller
                 'total_students' => (int) $item->total_students,
             ];
         });
-    
+
         // Return JSON response
         return response()->json($formattedCounts);
     }
-    
+
 
     public function show($id)
     {
@@ -254,7 +254,7 @@ class ApplicationController extends Controller
             'students.*.father_name' => 'required|string|max:255',
             'students.*.father_name_arabic' => 'nullable|string|max:255',
             'students.*.date_of_birth' => 'required|date|before:today',
-            'students.*.para' => 'nullable|string|max:255',
+            'students.*.para' => 'nullable|integer|exists:para_groups,id',
             'students.*.address' => 'nullable|string|max:255',
 
             'total_amount' => 'required|numeric|min:0',
@@ -270,7 +270,7 @@ class ApplicationController extends Controller
                 'group_id' => $request->group_id,
                 'center_id' => $request->center_id,
                 'payment_status' => 'Pending',
-                'total_amount' => $request->total_amount, // 
+                'total_amount' => $request->total_amount, //
                 'payment_method' => $request->payment_method ?? 'Offline',
                 'submitted_by' => Auth::guard('sanctum')->id() ?? null,
                 'application_date' => $request->application_date ?? now(),
@@ -280,7 +280,7 @@ class ApplicationController extends Controller
             $application->load('institute');
 
             return response()->json([
-                'message' => 'Application submitted successfully', 
+                'message' => 'Application submitted successfully',
                 'application' => $application
             ], 201);
         } catch (\Exception $e) {
@@ -306,7 +306,7 @@ class ApplicationController extends Controller
 
         try {
             $response = $this->createPayment($application->total_amount, $application->id, $callback_url);
-            
+
             return $response;
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to initiate payment', 'error' => $e->getMessage()], 500);
@@ -317,36 +317,36 @@ class ApplicationController extends Controller
     {
         $paymentID = $request->input('paymentID');
 
-        if($paymentID) {
+        if ($paymentID) {
             $response = $this->executePayment($paymentID);
 
             // return $response;
-      
-            if($response->transactionStatus == 'Completed') {
+
+            if ($response->transactionStatus == 'Completed') {
 
                 // store payment data
-                $application->update(['payment_method' => 'Online']); 
+                $application->update(['payment_method' => 'Online']);
 
                 $request->merge(['payment_status' => 'Paid']);
 
                 self::$application = $application;
-           
+
                 $this->updatePaymentStatus($request, $application->id); // how to call this
 
                 return response()->json([
                     'message' => 'Payment success',
-                    'status' => (boolean) (true),
+                    'status' => (bool) (true),
                 ], 201);
             } else {
                 return response()->json([
                     'message' => 'Payment failed! Try Again!',
-                    'status' => (boolean) (false),
+                    'status' => (bool) (false),
                 ], 200);
             }
         } else {
             return response()->json([
                 'message' => 'Payment failed! Try Again',
-                'status' => (boolean) (false),
+                'status' => (bool) (false),
             ], 200);
         }
     }
@@ -365,8 +365,7 @@ class ApplicationController extends Controller
                 'approved_by' => Auth::guard('sanctum')->id() ?? null,
             ]);
 
-            if ($request->payment_status === 'Paid' && !Student::where('application_id', $application->id)->exists())
-            {
+            if ($request->payment_status === 'Paid' && !Student::where('application_id', $application->id)->exists()) {
                 $registration_numbers = Student::query()
                     ->where('exam_id', $application->exam_id)
                     ->pluck('registration_number')
@@ -402,14 +401,14 @@ class ApplicationController extends Controller
     private function generateRegistrationNumber($exam_id, &$previous_registration_numbers)
     {
         do {
-            $rand = rand(10000, 99999); 
+            $rand = rand(10000, 99999);
             $new_registration_number = $exam_id . $rand;
         } while (in_array($new_registration_number, $previous_registration_numbers));
-    
+
         $previous_registration_numbers[] = $new_registration_number;
-    
+
         return $new_registration_number;
-    }  
+    }
 
     public function updateRegistrationPart(Request $request, $id)
     {
@@ -434,12 +433,12 @@ class ApplicationController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'Registration information updated successfully', 
+                'message' => 'Registration information updated successfully',
                 'application' => $application
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Failed to update registration information', 
+                'message' => 'Failed to update registration information',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -454,7 +453,7 @@ class ApplicationController extends Controller
             'students.*.father_name' => 'required|string|max:255',
             'students.*.father_name_arabic' => 'nullable|string|max:255',
             'students.*.date_of_birth' => 'required|date|before:today',
-            'students.*.para' => 'nullable|string|max:255',
+            'students.*.para' => 'nullable|integer|exists:para_groups,id',
             'students.*.address' => 'nullable|string|max:255',
         ]);
 
@@ -475,6 +474,4 @@ class ApplicationController extends Controller
             ], 500);
         }
     }
-
-
 }

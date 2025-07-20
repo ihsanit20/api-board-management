@@ -3,9 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use App\Models\SmsLog;
 use App\Models\SmsRecord;
+use App\Models\SmsStock;
 
 class SmsController extends Controller
 {
@@ -29,19 +28,23 @@ class SmsController extends Controller
         return response()->json($smsRecords, 200);
     }
 
-    public function count()
+    public function countStock()
     {
-        $totalSmsParts = SmsRecord::sum('sms_count');
-        $totalCost = SmsRecord::sum('cost');
+        $totalBought = SmsStock::sum('quantity');
+        $totalSpent = SmsRecord::where('status', 'sent')->sum('sms_count');
+
+        $totalAmount = SmsStock::sum('price');
+        $spentAmount = SmsRecord::where('status', 'sent')->sum('cost');
 
         return response()->json([
-            'success' => true,
-            'total_sms_parts' => $totalSmsParts,
-            'total_cost' => $totalCost, 
+            'total_bought' => $totalBought,
+            'total_spent' => $totalSpent,
+            'available_sms' => $totalBought - $totalSpent,
+            'available_amount' => $totalAmount - $spentAmount,
+            'total_amount' => $totalAmount,
+            'spent_amount' => $spentAmount,
         ]);
     }
-
-
 
     public function sendSms(Request $request)
     {
@@ -70,5 +73,4 @@ class SmsController extends Controller
             ], 500);
         }
     }
-
 }

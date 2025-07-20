@@ -166,7 +166,7 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
     Route::get('/applications/user-wise-counts', [ApplicationController::class, 'getUserWiseCounts']);
     Route::get('/applications/{id}', [ApplicationController::class, 'show']);
     Route::get('/sms-logs', [SmsController::class, 'index']);
-    Route::get('/sms-logs/count', [SmsController::class, 'count']);
+    Route::get('/sms-logs/count-stock', [SmsController::class, 'countStock']);
 
     Route::get('/collect-fees', [FeeCollectionController::class, 'index']);
     Route::get('/collect-fees/{id}', [FeeCollectionController::class, 'show']);
