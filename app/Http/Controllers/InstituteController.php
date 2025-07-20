@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Area;
+use App\Models\Exam;
 use App\Models\Institute;
 use Illuminate\Http\Request;
 
@@ -59,7 +60,7 @@ class InstituteController extends Controller
                     $query->where('group_id', $group_id);
                 });
             })
-            ->select('id','name', 'institute_code', 'phone')
+            ->select('id', 'name', 'institute_code', 'phone')
             ->oldest('institute_code')
             ->get();
 
@@ -127,12 +128,20 @@ class InstituteController extends Controller
         return response()->json($institutes);
     }
 
-    public function institutesApplicationStatusCounts()
+    public function institutesApplicationStatusCounts(Request $request)
     {
-        $institutesWithApplicationsCount = Institute::whereHas('applications')->count();
-        $institutesWithoutApplicationsCount = Institute::whereDoesntHave('applications')->count();
+        $examId = $request->input('exam_id') ?? Exam::latest('id')->value('id');
+
+        $institutesWithApplicationsCount = Institute::whereHas('applications', function ($q) use ($examId) {
+            $q->where('exam_id', $examId);
+        })->count();
+
+        $institutesWithoutApplicationsCount = Institute::whereDoesntHave('applications', function ($q) use ($examId) {
+            $q->where('exam_id', $examId);
+        })->count();
 
         return response()->json([
+            'exam_id' => $examId,
             'withApplications' => $institutesWithApplicationsCount,
             'withoutApplications' => $institutesWithoutApplicationsCount,
         ]);

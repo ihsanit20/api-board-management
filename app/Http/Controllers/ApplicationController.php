@@ -30,6 +30,15 @@ class ApplicationController extends Controller
                 'group:id,name'
             ]);
 
+        if ($request->has('exam_id') && $request->exam_id) {
+            $query->where('exam_id', $request->exam_id);
+        } else {
+            $latestExam = Exam::latest('id')->first();
+            if ($latestExam) {
+                $query->where('exam_id', $latestExam->id);
+            }
+        }
+
         if ($request->has('zamat_id') && $request->zamat_id) {
             $query->where('zamat_id', $request->zamat_id);
         }
@@ -117,18 +126,17 @@ class ApplicationController extends Controller
 
     public function getApplicationCounts(Request $request)
     {
+        $examId = $request->input('exam_id') ?? Exam::latest('id')->value('id');
 
-        $query = Application::query();
+        $query = Application::query()->where('exam_id', $examId);
 
         $totalApplications = $query->count();
-
         $pendingApplications = (clone $query)->where('payment_status', 'Pending')->count();
-
         $paidApplications = (clone $query)->where('payment_status', 'Paid')->count();
-
         $totalStudents = (clone $query)->selectRaw('SUM(JSON_LENGTH(students)) as total_students')->value('total_students');
 
         return response()->json([
+            'exam_id' => $examId,
             'totalApplications' => $totalApplications,
             'pendingApplications' => $pendingApplications,
             'paidApplications' => $paidApplications,
@@ -136,10 +144,12 @@ class ApplicationController extends Controller
         ]);
     }
 
-    public function getZamatWiseCounts()
+    public function getZamatWiseCounts(Request $request)
     {
-        // Fetch counts of applications and student count grouped by zamat_id
+        $examId = $request->input('exam_id') ?? Exam::latest('id')->value('id');
+
         $zamatCounts = Application::query()
+            ->where('exam_id', $examId)
             ->select('zamat_id')
             ->selectRaw('COUNT(*) as total_applications')
             ->selectRaw('SUM(JSON_LENGTH(students)) as total_students')
@@ -147,7 +157,6 @@ class ApplicationController extends Controller
             ->with('zamat:id,name')
             ->get();
 
-        // Format the response with zamat name and counts
         $formattedCounts = $zamatCounts->map(function ($item) {
             return [
                 'zamat_id' => $item->zamat_id,
@@ -157,22 +166,22 @@ class ApplicationController extends Controller
             ];
         });
 
-        // Return JSON response
         return response()->json($formattedCounts);
     }
 
-    public function getUserWiseCounts()
+    public function getUserWiseCounts(Request $request)
     {
-        // Fetch counts of applications grouped by submitted_by
+        $examId = $request->input('exam_id') ?? Exam::latest('id')->value('id');
+
         $userCounts = Application::query()
+            ->where('exam_id', $examId)
             ->select('submitted_by')
             ->selectRaw('COUNT(*) as total_applications')
             ->selectRaw('SUM(JSON_LENGTH(students)) as total_students')
             ->groupBy('submitted_by')
-            ->with(['submittedBy:id,name']) // Assuming submittedBy is a user relationship
+            ->with(['submittedBy:id,name'])
             ->get();
 
-        // Format the response with user names and counts
         $formattedCounts = $userCounts->map(function ($item) {
             return [
                 'submitted_by' => $item->submitted_by,
@@ -182,10 +191,8 @@ class ApplicationController extends Controller
             ];
         });
 
-        // Return JSON response
         return response()->json($formattedCounts);
     }
-
 
     public function show($id)
     {
@@ -221,7 +228,7 @@ class ApplicationController extends Controller
                 'exam:id,name',
                 'zamat:id,name',
                 'area:id,name',
-                'institute:id,name',
+                'institute:id,name,institute_code',
                 'center',
                 'submittedBy',
                 'approvedBy',
@@ -235,7 +242,6 @@ class ApplicationController extends Controller
 
         return response()->json($application);
     }
-
 
     public function store(Request $request)
     {
@@ -365,32 +371,32 @@ class ApplicationController extends Controller
                 'approved_by' => Auth::guard('sanctum')->id() ?? null,
             ]);
 
-            if ($request->payment_status === 'Paid' && !Student::where('application_id', $application->id)->exists()) {
-                $registration_numbers = Student::query()
-                    ->where('exam_id', $application->exam_id)
-                    ->pluck('registration_number')
-                    ->toArray();
+            // if ($request->payment_status === 'Paid' && !Student::where('application_id', $application->id)->exists()) {
+            //     $registration_numbers = Student::query()
+            //         ->where('exam_id', $application->exam_id)
+            //         ->pluck('registration_number')
+            //         ->toArray();
 
-                foreach ($application->students as $studentData) {
-                    Student::create([
-                        'application_id' => $application->id,
-                        'exam_id' => $application->exam_id,
-                        'institute_id' => $application->institute_id,
-                        'zamat_id' => $application->zamat_id,
-                        'group_id' => $application->group_id,
-                        'area_id' => $application->area_id,
-                        'center_id' => $application->center_id,
-                        'name' => $studentData['name'],
-                        'name_arabic' => $studentData['name_arabic'] ?? '',
-                        'father_name' => $studentData['father_name'] ?? '',
-                        'father_name_arabic' => $studentData['father_name_arabic'] ?? '',
-                        'date_of_birth' => $studentData['date_of_birth'] ?? '',
-                        'para' => $studentData['para'] ?? '',
-                        'address' => $studentData['address'] ?? '',
-                        'registration_number' => $this->generateRegistrationNumber($application->exam_id, $registration_numbers),
-                    ]);
-                }
-            }
+            //     foreach ($application->students as $studentData) {
+            //         Student::create([
+            //             'application_id' => $application->id,
+            //             'exam_id' => $application->exam_id,
+            //             'institute_id' => $application->institute_id,
+            //             'zamat_id' => $application->zamat_id,
+            //             'group_id' => $application->group_id,
+            //             'area_id' => $application->area_id,
+            //             'center_id' => $application->center_id,
+            //             'name' => $studentData['name'],
+            //             'name_arabic' => $studentData['name_arabic'] ?? '',
+            //             'father_name' => $studentData['father_name'] ?? '',
+            //             'father_name_arabic' => $studentData['father_name_arabic'] ?? '',
+            //             'date_of_birth' => $studentData['date_of_birth'] ?? '',
+            //             'para' => $studentData['para'] ?? '',
+            //             'address' => $studentData['address'] ?? '',
+            //             'registration_number' => $this->generateRegistrationNumber($application->exam_id, $registration_numbers),
+            //         ]);
+            //     }
+            // }
 
             return response()->json(['message' => 'Payment status updated successfully']);
         } catch (\Exception $e) {
