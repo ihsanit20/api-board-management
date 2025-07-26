@@ -6,10 +6,13 @@ use App\Models\Center;
 use App\Models\Exam;
 use App\Models\Examiner;
 use App\Models\ExamSubject;
+use App\Models\Institute;
+use App\Models\LetterDistributionCenter;
 use App\Models\Student;
 use App\Models\Zamat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class PrintController extends Controller
 {
@@ -62,6 +65,59 @@ class PrintController extends Controller
 
         return response()->json($data);
     }
+
+    public function PrintGeneralEnvelope(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'area_id' => 'required|exists:areas,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $areaId = $request->input('area_id');
+
+        // eager load institute relation
+        $centers = LetterDistributionCenter::with('institute')
+            ->where('area_id', $areaId)
+            ->get();
+
+        $instituteEnvelopeMap = [];
+
+        foreach ($centers as $center) {
+            $ids = json_decode($center->institute_ids, true);
+            if (is_array($ids) && $center->institute) {
+                foreach ($ids as $instituteId) {
+                    // ✅ এখন center->institute->name বসানো হবে
+                    $instituteEnvelopeMap[$instituteId] = $center->institute->name;
+                }
+            }
+        }
+
+        $institutes = Institute::with('area')
+            ->where('area_id', $areaId)
+            ->get();
+
+        $data = $institutes->map(function ($institute) use ($instituteEnvelopeMap) {
+            return [
+                'id' => $institute->id,
+                'name' => $institute->name,
+                'institute_code' => $institute->institute_code,
+                'phone' => $institute->phone,
+                'area_name' => $institute->area->name ?? null,
+                'envelope_center' => $instituteEnvelopeMap[$institute->id] ?? null, // ✅ এখন center হিসেবে যে institute কাজ করছে তার নাম
+            ];
+        });
+
+        return response()->json([
+            'data' => $data
+        ]);
+    }
+
 
     public function generateMarkSheet(Request $request)
     {
