@@ -8,6 +8,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExaminerController;
 use App\Http\Controllers\ExamSubjectController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FeeCollectionController;
 use App\Http\Controllers\FeeController;
 use App\Http\Controllers\GroupController;
@@ -215,6 +216,10 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::post('/merit-prices', [MeritPriceController::class, 'store']);
         Route::put('/merit-prices/{meritPrice}', [MeritPriceController::class, 'update']);
         Route::get('/student-merit-price', [MeritPriceController::class, 'StudentMeritPrice']);
+
+        Route::get('expenses', [ExpenseController::class, 'index']);
+        Route::post('expenses', [ExpenseController::class, 'store']);
+        Route::get('expenses/{expense}', [ExpenseController::class, 'show']);
     });
 
     Route::middleware('role:Super Admin,Developer')->group(function () {
@@ -277,6 +282,10 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::delete('/quran-questions/{id}', [QuranQuestionController::class, 'destroy']);
 
         Route::delete('/para-groups/{id}', [ParaGroupController::class, 'destroy']);
+
+        Route::put('expenses/{expense}', [ExpenseController::class, 'update']);
+        Route::patch('expenses/{expense}', [ExpenseController::class, 'update']);
+        Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy']);
     });
 
     Route::middleware('role:Developer')->group(function () {});
