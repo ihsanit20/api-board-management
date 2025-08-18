@@ -27,6 +27,7 @@ class GroupController extends Controller
 
         $groups = $query
             ->orderBy('zamat_id')
+            ->orderBy('name')
             ->get();
 
         return response()->json($groups);
