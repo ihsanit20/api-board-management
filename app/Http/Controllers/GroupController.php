@@ -14,22 +14,24 @@ class GroupController extends Controller
     {
         // Check if zamat_id is provided in the request
         $zamatId = $request->input('zamat_id');
-    
+
         // Retrieve groups, filtering by zamat_id if provided
         $query = Group::with([
             'zamat:id,name',
             'areas:id,name,area_code',
         ]);
-    
+
         if ($zamatId) {
             $query->where('zamat_id', $zamatId);
         }
-    
-        $groups = $query->get();
-    
+
+        $groups = $query
+            ->orderBy('zamat_id')
+            ->get();
+
         return response()->json($groups);
     }
-    
+
 
     /**
      * Store a newly created resource in storage.
