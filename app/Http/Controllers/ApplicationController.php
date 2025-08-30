@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Resources\ApplicationResource;
 use App\Models\Application;
 use App\Models\Exam;
-use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Msilabs\Bkash\BkashPayment;
@@ -477,6 +476,31 @@ class ApplicationController extends Controller
             return response()->json([
                 'message' => 'Failed to update students information',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $application = Application::findOrFail($id);
+
+            if (strtolower($application->payment_status) === 'paid') {
+                return response()->json([
+                    'message' => 'Paid application cannot be deleted.'
+                ], 422);
+            }
+
+            $application->delete();
+
+            return response()->json([
+                'message' => 'Application deleted successfully.',
+                'id'      => (int) $id,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete application.',
+                'error'   => $e->getMessage(),
             ], 500);
         }
     }

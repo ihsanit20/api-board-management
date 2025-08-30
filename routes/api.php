@@ -286,6 +286,8 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::put('expenses/{expense}', [ExpenseController::class, 'update']);
         Route::patch('expenses/{expense}', [ExpenseController::class, 'update']);
         Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy']);
+
+        Route::delete('/applications/{id}', [ApplicationController::class, 'destroy']);
     });
 
     Route::middleware('role:Developer')->group(function () {});

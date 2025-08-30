@@ -6,6 +6,8 @@ use App\Models\CollectFee;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Exam;
+use Carbon\Carbon;
 use Msilabs\Bkash\BkashPayment;
 
 class FeeCollectionController extends Controller
@@ -15,60 +17,77 @@ class FeeCollectionController extends Controller
     public function index(Request $request)
     {
         $query = CollectFee::with([
-            'exam:id,name', 
-            'institute:id,name,institute_code', 
+            'exam:id,name',
+            'institute:id,name,institute_code',
             'zamat:id,name'
         ]);
-    
-        $query->when(true, function ($q) {
-            $q->where(function ($subQuery) {
-                $subQuery->where('payment_method', '!=', 'online')
-                         ->orWhere(function ($subSubQuery) {
-                             $subSubQuery->where('payment_method', 'online')
-                                         ->whereNotNull('transaction_id');
-                         });
-            });
+
+        // Exclude invalid online payments (allow non-online OR online with transaction_id)
+        $query->where(function ($subQuery) {
+            $subQuery->where('payment_method', '!=', 'online')
+                ->orWhere(function ($sub) {
+                    $sub->where('payment_method', 'online')
+                        ->whereNotNull('transaction_id');
+                });
         });
-    
-        if ($request->has('institute_code')) {
+
+        // --- Exam filter with default = latest exam ---
+        // if exam_id provided and not 'all' -> use it; otherwise use latest exam id
+        $selectedExamId = null;
+        if ($request->filled('exam_id') && $request->exam_id !== 'all') {
+            $selectedExamId = (int) $request->exam_id;
+        } else {
+            // সর্বশেষ এক্সাম (id desc ধরে)
+            $selectedExamId = Exam::query()->latest('id')->value('id'); // null হলে ফিল্টার হবে না
+        }
+        if ($selectedExamId) {
+            $query->where('exam_id', $selectedExamId);
+        }
+
+        // institute_code filter
+        if ($request->filled('institute_code')) {
             $query->whereHas('institute', function ($q) use ($request) {
                 $q->where('institute_code', $request->institute_code);
             });
         }
-    
-        if ($request->has('zamat_id')) {
+
+        // zamat filter
+        if ($request->filled('zamat_id')) {
             $query->where('zamat_id', $request->zamat_id);
         }
-    
-        if ($request->has('exam_id')) {
-            $query->where('exam_id', $request->exam_id);
-        }
-    
-        if ($request->has('payment_method')) {
+
+        // payment_method filter
+        if ($request->filled('payment_method')) {
             $query->where('payment_method', $request->payment_method);
         }
-    
-        if ($request->has('date_from') && $request->has('date_to')) {
-            $query->whereBetween('created_at', [$request->date_from, $request->date_to]);
+
+        // date range (full day safe)
+        if ($request->filled('date_from') && $request->filled('date_to')) {
+            $from = Carbon::parse($request->date_from)->startOfDay();
+            $to   = Carbon::parse($request->date_to)->endOfDay();
+            $query->whereBetween('created_at', [$from, $to]);
         }
 
-        if ($request->has('transaction_id')) {
+        // transaction_id filter
+        if ($request->filled('transaction_id')) {
             $query->where('transaction_id', $request->transaction_id);
         }
-    
-        $feeCollections = $query->orderBy('created_at', 'desc')->get();
-    
+
+        $feeCollections = $query->orderByDesc('created_at')->get();
+
         return response()->json([
             'message' => 'Fee collection list retrieved successfully.',
+            // UI-তে ডিফল্ট/সিলেক্টেড এক্সাম দেখাতে কাজে লাগবে
+            'selected_exam_id' => $selectedExamId,
             'data' => $feeCollections,
         ], 200);
     }
-    
+
     public function show($id)
     {
         try {
             $feeCollection = CollectFee::with([
-                'institute:id,name,institute_code,phone', 
+                'institute:id,name,institute_code,phone',
                 'zamat:id,name'
             ])->findOrFail($id);
 
@@ -102,9 +121,9 @@ class FeeCollectionController extends Controller
             'institute_id' => 'required|exists:institutes,id',
             'zamat_id' => 'required|exists:zamats,id',
         ]);
-    
+
         DB::beginTransaction();
-    
+
         try {
             $feeCollection = CollectFee::create([
                 'student_ids' => json_encode($request->student_ids),
@@ -115,11 +134,11 @@ class FeeCollectionController extends Controller
                 'institute_id' => $request->institute_id,
                 'zamat_id' => $request->zamat_id,
             ]);
-    
+
             if ($request->payment_method === 'online') {
                 $callback_url = env('FRONTEND_BASE_URL', 'https://tanjim.madrasah.cc') . "/bkash/callback/{$feeCollection->id}";
                 $response = $this->createPayment($feeCollection->total_amount, $feeCollection->id, $callback_url);
-    
+
                 if (isset($response->bkashURL)) {
                     DB::commit();
                     return response()->json([
@@ -129,47 +148,46 @@ class FeeCollectionController extends Controller
                         'bkashURL' => $response->bkashURL ?? '#',
                     ], 201);
                 }
-    
+
                 throw new \Exception("Error creating payment: Payment creation failed. No payment ID received.");
             } else {
                 $studentIds = $request->student_ids;
                 $this->assignRollNumbers($studentIds, $request->exam_id);
             }
-    
+
             DB::commit();
-    
+
             return response()->json([
                 'message' => 'Fee collected successfully and roll numbers assigned.',
                 'data' => $feeCollection,
             ], 201);
-    
         } catch (\Exception $e) {
             DB::rollBack();
-    
+
             return response()->json([
                 'message' => 'Failed to collect fee.',
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
-    
+
     public function bkashExecutePayment($id, Request $request)
     {
         $paymentID = $request->input('paymentID');
-    
+
         if ($paymentID) {
             $response = $this->executePayment($paymentID);
-    
+
             if ($response && ($response->transactionStatus ?? '') === 'Completed') {
                 $feeCollection = CollectFee::findOrFail($id);
                 $feeCollection->update([
                     'transaction_id' => $response->trxID,
                     'payment_method' => 'online',
                 ]);
-    
+
                 $studentIds = json_decode($feeCollection->student_ids, true);
                 $this->assignRollNumbers($studentIds);
-    
+
                 $institutePhone = $feeCollection->institute->phone ?? null;
                 $examName = $feeCollection->exam->name ?? '';
                 $zamatName = $feeCollection->zamat->name ?? '';
@@ -177,17 +195,17 @@ class FeeCollectionController extends Controller
                 $totalAmount = $feeCollection->total_amount;
                 $transactionId = $response->trxID;
                 $totalStudent = count($studentIds);
-    
+
                 if (!empty($institutePhone)) {
                     $message = "\"{$examName}\"-এর ফি জমা সফল হয়েছে! ইলহাক: {$instituteCode}, মারহালা: {$zamatName}, পরীক্ষার্থী সংখ্যা: {$totalStudent} জন, ফি’র পরিমান: {$totalAmount}TK, TRXID: {$transactionId}\nধন্যবাদ\n-তানযীম";
-    
+
                     $smsResponse = $this->sendSmsWithStore(
                         $message,
                         $institutePhone,
                         "Fee Collection",
                         $feeCollection->institute->id ?? null
                     );
-    
+
                     if ($smsResponse && $smsResponse->failed()) {
                         return response()->json([
                             'message' => 'Payment successful, but SMS sending failed.',
@@ -195,7 +213,7 @@ class FeeCollectionController extends Controller
                         ], 201);
                     }
                 }
-    
+
                 return response()->json([
                     'message' => 'Payment successful. Fee collected and SMS sent.',
                     'status' => true,
@@ -207,7 +225,7 @@ class FeeCollectionController extends Controller
                 ], 200);
             }
         }
-    
+
         return response()->json([
             'message' => 'Invalid payment ID or status.',
             'status' => false,
@@ -218,13 +236,13 @@ class FeeCollectionController extends Controller
     {
         foreach ($studentIds as $studentId) {
             $student = Student::find($studentId);
-    
+
             if (!$student->roll_number) {
                 $previousMaxRollNumber = Student::query()
                     ->where('exam_id', $student->exam_id)
                     ->where('zamat_id', $student->zamat_id)
                     ->max('roll_number');
-    
+
                 $student->roll_number = $previousMaxRollNumber
                     ? $previousMaxRollNumber + 1
                     : $student->exam_id . $student->zamat_id . "0001";
