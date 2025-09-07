@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\ApplicationResource;
 use App\Models\Application;
 use App\Models\Exam;
+use App\Models\Institute;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Msilabs\Bkash\BkashPayment;
@@ -503,5 +504,64 @@ class ApplicationController extends Controller
                 'error'   => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function getInvoice(Request $request)
+    {
+        $request->validate([
+            'institute_code' => ['required', 'exists:institutes,institute_code'],
+            'exam_id'        => ['nullable', 'exists:exams,id'], // exam_id optional করা হলো
+        ]);
+
+        // exam_id → না থাকলে সর্বশেষ exam ধরা হবে
+        $examId = $request->input('exam_id') ?? Exam::latest('id')->value('id');
+        $exam   = Exam::select('id', 'name')->findOrFail($examId);
+
+        $institute = Institute::select('id', 'name', 'institute_code', 'phone')
+            ->where('institute_code', $request->institute_code)
+            ->firstOrFail();
+
+        // Paid applications → জামাতভিত্তিক aggregate
+        $rows = Application::query()
+            ->where('exam_id', $exam->id)
+            ->where('institute_id', $institute->id)
+            ->where('payment_status', 'Paid')
+            ->select('zamat_id')
+            ->selectRaw('SUM(JSON_LENGTH(students)) as student_count')   // MySQL/MariaDB
+            ->selectRaw('SUM(total_amount) as paid_amount')
+            ->groupBy('zamat_id')
+            ->with('zamat:id,name')
+            ->get();
+
+        // রেসপন্স গঠন
+        $zamats = [];
+        $totalStudents = 0;
+        $totalAmount = 0.0;
+
+        foreach ($rows as $r) {
+            $name = $r->zamat->name ?? ('Zamat#' . $r->zamat_id);
+            $studentCount = (int) ($r->student_count ?? 0);
+            $paidAmount   = (float) ($r->paid_amount ?? 0);
+
+            $zamats[$name] = [
+                'zamat_id'      => $r->zamat_id,
+                'student_count' => $studentCount,
+                'paid_amount'   => $paidAmount,
+            ];
+
+            $totalStudents += $studentCount;
+            $totalAmount   += $paidAmount;
+        }
+
+        return response()->json([
+            'exam_id'        => $exam->id,
+            'exam_name'      => $exam->name,
+            'institute_name' => $institute->name,
+            'institute_code' => $institute->institute_code,
+            'phone'          => $institute->phone ?? null,
+            'zamats'         => $zamats,    // { zamatName: {student_count, paid_amount} }
+            'total_students' => $totalStudents,
+            'total_amount'   => $totalAmount,
+        ]);
     }
 }
