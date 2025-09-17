@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Msilabs\Bkash\BkashPayment;
 use App\Models\ApplicationPayment;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class ApplicationController extends Controller
@@ -29,11 +30,12 @@ class ApplicationController extends Controller
                 'center',
                 'submittedBy:id,name',
                 'approvedBy:id,name',
-                'group:id,name'
+                'group:id,name',
             ]);
 
-        if ($request->has('exam_id') && $request->exam_id) {
-            $query->where('exam_id', $request->exam_id);
+        // exam filter (latest by default)
+        if ($request->filled('exam_id')) {
+            $query->where('exam_id', $request->integer('exam_id'));
         } else {
             $latestExam = Exam::latest('id')->first();
             if ($latestExam) {
@@ -41,44 +43,104 @@ class ApplicationController extends Controller
             }
         }
 
-        if ($request->has('zamat_id') && $request->zamat_id) {
-            $query->where('zamat_id', $request->zamat_id);
+        // other filters
+        if ($request->filled('zamat_id')) {
+            $query->where('zamat_id', $request->integer('zamat_id'));
         }
 
-        if ($request->has('institute_code') && $request->institute_code) {
-            $query->whereHas('institute', function ($q) use ($request) {
-                $q->where('institute_code', $request->institute_code);
+        if ($request->filled('institute_code')) {
+            $code = trim((string) $request->input('institute_code'));
+            $query->whereHas('institute', function ($q) use ($code) {
+                $q->where('institute_code', $code);
             });
         }
 
-        if ($request->has('application_id') && $request->application_id) {
-            $query->where('id', $request->application_id);
+        if ($request->filled('application_id')) {
+            $query->where('id', $request->integer('application_id'));
         }
 
+        /* -------------------------------
+     | payment_method filter
+     | accepts: payment_method=Online|Offline|all
+     | also supports: method=... or method[]=...
+     *-------------------------------- */
+        $methodParam = $request->input('payment_method', $request->input('method'));
+        if ($methodParam && strtolower(is_array($methodParam) ? 'x' : $methodParam) !== 'all') {
+            $allowed = ['Online', 'Offline'];
+
+            if (is_array($methodParam)) {
+                $values = array_values(array_intersect($methodParam, $allowed));
+                if (!empty($values)) {
+                    $query->whereIn('payment_method', $values);
+                }
+            } else {
+                $normalized = ucfirst(strtolower($methodParam)); // online -> Online
+                if (in_array($normalized, $allowed, true)) {
+                    $query->where('payment_method', $normalized);
+                }
+            }
+        }
+
+        /* --------------------------------------------
+     | payment_status filter (string or array)
+     | supports aliases: success/completed => Paid
+     | accepts: status=Paid|Pending|Failed|all
+     *-------------------------------------------- */
+        $statusParam = $request->input('status');
+        if ($statusParam && strtolower(is_array($statusParam) ? 'x' : $statusParam) !== 'all') {
+            $allowed = ['Paid', 'Pending', 'Failed'];
+
+            $normalize = function ($s) {
+                $s = strtolower(trim((string) $s));
+                $aliases = [
+                    'paid'      => 'Paid',
+                    'success'   => 'Paid',
+                    'completed' => 'Paid',
+                    'pending'   => 'Pending',
+                    'failed'    => 'Failed',
+                ];
+                return $aliases[$s] ?? ucfirst($s);
+            };
+
+            if (is_array($statusParam)) {
+                $values = array_map($normalize, $statusParam);
+                $values = array_values(array_intersect($values, $allowed));
+                if (!empty($values)) {
+                    $query->whereIn('payment_status', $values);
+                }
+            } else {
+                $value = $normalize($statusParam);
+                if (in_array($value, $allowed, true)) {
+                    $query->where('payment_status', $value);
+                }
+            }
+        }
+
+        // pagination
         $perPage = $request->input('per_page', 15);
 
         if ($perPage === 'all') {
             $applications = $query->latest('id')->get();
 
             return response()->json([
-                'data' => ApplicationResource::collection($applications),
-                'total' => $applications->count(),
-                'per_page' => $applications->count(),
+                'data'         => ApplicationResource::collection($applications),
+                'total'        => $applications->count(),
+                'per_page'     => $applications->count(),
                 'current_page' => 1,
-                'last_page' => 1,
+                'last_page'    => 1,
             ]);
         }
 
-        $applications = $query->latest('id')->paginate($perPage);
+        $applications = $query->latest('id')->paginate((int) $perPage);
 
         ApplicationResource::withoutWrapping();
 
         return response()->json([
-            'data' => ApplicationResource::collection($applications),
-            'total' => $applications->total(), // পেজিনেটর থেকে মোট আইটেম সংখ্যা
-            'per_page' => $applications->perPage(), // প্রতি পেজে আইটেম সংখ্যা
-            'current_page' => $applications->currentPage(), // বর্তমান পেজ নম্বর
-            'last_page' => $applications->lastPage(), // মোট পেজ সংখ্যা
+            'data'         => ApplicationResource::collection($applications),
+            'total'        => $applications->total(),
+            'per_page'     => $applications->perPage(),
+            'current_page' => $applications->currentPage(),
+            'last_page'    => $applications->lastPage(),
         ]);
     }
 
@@ -132,19 +194,28 @@ class ApplicationController extends Controller
 
         $query = Application::query()->where('exam_id', $examId);
 
-        $totalApplications = $query->count();
+        $totalApplications   = (clone $query)->count();
         $pendingApplications = (clone $query)->where('payment_status', 'Pending')->count();
-        $paidApplications = (clone $query)->where('payment_status', 'Paid')->count();
-        $totalStudents = (clone $query)->selectRaw('SUM(JSON_LENGTH(students)) as total_students')->value('total_students');
+        $paidApplications    = (clone $query)->where('payment_status', 'Paid')->count();
+        $totalStudents       = (clone $query)->selectRaw('SUM(JSON_LENGTH(students)) as total_students')->value('total_students');
+
+        // ✅ নতুন দুইটা কাউন্ট: payment_method ভিত্তিক
+        $onlineApplications  = (clone $query)->where('payment_method', 'Online')->count();
+        $offlineApplications = (clone $query)->where('payment_method', 'Offline')->count();
 
         return response()->json([
-            'exam_id' => $examId,
-            'totalApplications' => $totalApplications,
+            'exam_id'             => $examId,
+            'totalApplications'   => $totalApplications,
             'pendingApplications' => $pendingApplications,
-            'paidApplications' => $paidApplications,
-            'totalStudents' => (int) $totalStudents
+            'paidApplications'    => $paidApplications,
+            'totalStudents'       => (int) $totalStudents,
+
+            // নতুন ফিল্ড
+            'onlineApplications'  => $onlineApplications,
+            'offlineApplications' => $offlineApplications,
         ]);
     }
+
 
     public function getZamatWiseCounts(Request $request)
     {
@@ -324,54 +395,71 @@ class ApplicationController extends Controller
     public function bkashExecutePayment(Application $application, Request $request)
     {
         $paymentID = $request->input('paymentID');
-
-        if ($paymentID) {
-            $response = $this->executePayment($paymentID);
-
-            if ($response->transactionStatus == 'Completed') {
-
-                DB::transaction(function () use ($application, $response, $paymentID) {
-                    // 1) Application আপডেট
-                    $application->update([
-                        'payment_method'  => 'Online',
-                        'payment_status'  => 'Paid',
-                    ]);
-
-                    $trxId = $response->trxID ?? null;
-
-                    ApplicationPayment::updateOrCreate(
-                        $trxId
-                            ? ['trx_id' => $trxId]
-                            : ['application_id' => $application->id, 'trx_id' => null],
-                        [
-                            'application_id' => $application->id,
-                            'amount'         => (float) ($response->amount ?? $application->total_amount),
-                            'payment_method' => 'bkash',           // তোমার enum ভ্যালু
-                            'status'         => 'Completed',
-                            'payer_msisdn'   => $response->customerMsisdn ?? null,
-                            'meta'           => json_decode(json_encode($response), true), // পুরো রেসপন্স সেভ
-                            'paid_at'        => now(), // চাইলে response থেকে সময় নাও
-                        ]
-                    );
-                });
-
-                return response()->json([
-                    'message' => 'Payment success',
-                    'status'  => true,
-                ], 201);
-            }
-
-            return response()->json([
-                'message' => 'Payment failed! Try Again!',
-                'status'  => false,
-            ], 200);
+        if (!$paymentID) {
+            return response()->json(['message' => 'Payment failed! Try Again', 'status' => false], 200);
         }
 
-        return response()->json([
-            'message' => 'Payment failed! Try Again',
-            'status'  => false,
-        ], 200);
+        $response = $this->executePayment($paymentID);
+        if ((data_get($response, 'transactionStatus')) !== 'Completed') {
+            return response()->json(['message' => 'Payment failed! Try Again!', 'status' => false], 200);
+        }
+
+        // ----- Simple extracts -----
+        $trxId   = data_get($response, 'trxID') ?? data_get($response, 'trxId') ?? data_get($response, 'transactionId');
+        $amount  = (float) (data_get($response, 'amount') ?? $application->total_amount);
+
+        // MSISDN: bKash → fallback institute phone
+        $msisdnRaw = data_get($response, 'customerMsisdn')
+            ?? data_get($response, 'payerMSISDN')
+            ?? data_get($response, 'msisdn')
+            ?? data_get($response, 'payer.msisdn')
+            ?? optional($application->institute)->phone;
+        $msisdn = $msisdnRaw ? preg_replace('/\D+/', '', (string) $msisdnRaw) : null;
+        $msisdn = $msisdn ? substr($msisdn, 0, 30) : null;
+
+        // paid_at: parse safely; parse fail হলে now()
+        $paidAtRaw = data_get($response, 'completedTime')
+            ?? data_get($response, 'paymentExecuteTime')
+            ?? data_get($response, 'updateTime');
+        try {
+            $paidAt = $paidAtRaw ? Carbon::parse($paidAtRaw) : now();
+        } catch (\Throwable $e) {
+            $paidAt = now();
+        }
+
+        $meta = json_decode(json_encode($response), true);
+
+        // ----- Save atomically -----
+        DB::transaction(function () use ($application, $trxId, $amount, $msisdn, $paidAt, $meta) {
+            // Application update
+            $application->update([
+                'payment_method' => 'Online',
+                'payment_status' => 'Paid',
+            ]);
+
+            // Payment row (idempotent): trx_id থাকলে ওটাই key; না থাকলে (application_id + trx_id=null)
+            $where = $trxId
+                ? ['trx_id' => $trxId]
+                : ['application_id' => $application->id, 'trx_id' => null];
+
+            ApplicationPayment::updateOrCreate($where, [
+                'application_id' => $application->id,
+                'exam_id'        => $application->exam_id,
+                'institute_id'   => $application->institute_id,
+                'zamat_id'       => $application->zamat_id,
+
+                'amount'         => $amount,
+                'payment_method' => 'bkash',
+                'status'         => 'Completed',
+                'payer_msisdn'   => $msisdn,
+                'meta'           => $meta,
+                'paid_at'        => $paidAt,
+            ]);
+        });
+
+        return response()->json(['message' => 'Payment success', 'status' => true], 201);
     }
+
 
     public function updatePaymentStatus(Request $request, $id)
     {
@@ -386,33 +474,6 @@ class ApplicationController extends Controller
                 'payment_status' => $request->payment_status,
                 'approved_by' => Auth::guard('sanctum')->id() ?? null,
             ]);
-
-            // if ($request->payment_status === 'Paid' && !Student::where('application_id', $application->id)->exists()) {
-            //     $registration_numbers = Student::query()
-            //         ->where('exam_id', $application->exam_id)
-            //         ->pluck('registration_number')
-            //         ->toArray();
-
-            //     foreach ($application->students as $studentData) {
-            //         Student::create([
-            //             'application_id' => $application->id,
-            //             'exam_id' => $application->exam_id,
-            //             'institute_id' => $application->institute_id,
-            //             'zamat_id' => $application->zamat_id,
-            //             'group_id' => $application->group_id,
-            //             'area_id' => $application->area_id,
-            //             'center_id' => $application->center_id,
-            //             'name' => $studentData['name'],
-            //             'name_arabic' => $studentData['name_arabic'] ?? '',
-            //             'father_name' => $studentData['father_name'] ?? '',
-            //             'father_name_arabic' => $studentData['father_name_arabic'] ?? '',
-            //             'date_of_birth' => $studentData['date_of_birth'] ?? '',
-            //             'para' => $studentData['para'] ?? '',
-            //             'address' => $studentData['address'] ?? '',
-            //             'registration_number' => $this->generateRegistrationNumber($application->exam_id, $registration_numbers),
-            //         ]);
-            //     }
-            // }
 
             return response()->json(['message' => 'Payment status updated successfully']);
         } catch (\Exception $e) {

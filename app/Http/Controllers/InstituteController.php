@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Application;
 use App\Models\Area;
 use App\Models\Exam;
 use App\Models\Institute;
@@ -83,28 +84,47 @@ class InstituteController extends Controller
 
     public function institutesWithApplications()
     {
-        $institutesWithApplications = Institute::whereHas('applications')
+        // applications টেবিলের মধ্য থেকে সর্বশেষ exam_id
+        $latestExamId = Application::max('exam_id');
+
+        if (!$latestExamId) {
+            return response()->json([]); // কোন application নেই
+        }
+
+        $rows = Institute::query()
+            ->whereHas('applications', function ($q) use ($latestExamId) {
+                $q->where('exam_id', $latestExamId);
+            })
             ->whereNotNull('phone')
             ->whereRaw('LENGTH(phone) = 11')
             ->select('id', 'name', 'phone', 'institute_code')
             ->oldest('institute_code')
             ->get();
 
-        return response()->json($institutesWithApplications);
+        return response()->json($rows);
     }
 
     public function institutesWithoutApplications()
     {
-        $institutesWithoutApplications = Institute::whereDoesntHave('applications')
+        // applications টেবিলের মধ্য থেকে সর্বশেষ exam_id
+        $latestExamId = Application::max('exam_id');
+
+        if (!$latestExamId) {
+            return response()->json([]); // কোন application নেই
+        }
+
+        $rows = Institute::query()
+            ->whereDoesntHave('applications', function ($q) use ($latestExamId) {
+                $q->where('exam_id', $latestExamId);
+            })
             ->whereNotNull('phone')
             ->whereRaw('LENGTH(phone) = 11')
             ->select('id', 'name', 'phone', 'institute_code')
             ->oldest('institute_code')
             ->get();
 
-        return response()->json($institutesWithoutApplications);
+        return response()->json($rows);
     }
-
 
     public function institutesWithValidPhone()
     {
