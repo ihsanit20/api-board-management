@@ -9,6 +9,8 @@ use App\Models\Institute;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Msilabs\Bkash\BkashPayment;
+use App\Models\ApplicationPayment;
+use Illuminate\Support\Facades\DB;
 
 class ApplicationController extends Controller
 {
@@ -326,35 +328,49 @@ class ApplicationController extends Controller
         if ($paymentID) {
             $response = $this->executePayment($paymentID);
 
-            // return $response;
-
             if ($response->transactionStatus == 'Completed') {
 
-                // store payment data
-                $application->update(['payment_method' => 'Online']);
+                DB::transaction(function () use ($application, $response, $paymentID) {
+                    // 1) Application আপডেট
+                    $application->update([
+                        'payment_method'  => 'Online',
+                        'payment_status'  => 'Paid',
+                    ]);
 
-                $request->merge(['payment_status' => 'Paid']);
+                    $trxId = $response->trxID ?? null;
 
-                self::$application = $application;
-
-                $this->updatePaymentStatus($request, $application->id); // how to call this
+                    ApplicationPayment::updateOrCreate(
+                        $trxId
+                            ? ['trx_id' => $trxId]
+                            : ['application_id' => $application->id, 'trx_id' => null],
+                        [
+                            'application_id' => $application->id,
+                            'amount'         => (float) ($response->amount ?? $application->total_amount),
+                            'payment_method' => 'bkash',           // তোমার enum ভ্যালু
+                            'status'         => 'Completed',
+                            'payer_msisdn'   => $response->customerMsisdn ?? null,
+                            'meta'           => json_decode(json_encode($response), true), // পুরো রেসপন্স সেভ
+                            'paid_at'        => now(), // চাইলে response থেকে সময় নাও
+                        ]
+                    );
+                });
 
                 return response()->json([
                     'message' => 'Payment success',
-                    'status' => (bool) (true),
+                    'status'  => true,
                 ], 201);
-            } else {
-                return response()->json([
-                    'message' => 'Payment failed! Try Again!',
-                    'status' => (bool) (false),
-                ], 200);
             }
-        } else {
+
             return response()->json([
-                'message' => 'Payment failed! Try Again',
-                'status' => (bool) (false),
+                'message' => 'Payment failed! Try Again!',
+                'status'  => false,
             ], 200);
         }
+
+        return response()->json([
+            'message' => 'Payment failed! Try Again',
+            'status'  => false,
+        ], 200);
     }
 
     public function updatePaymentStatus(Request $request, $id)
