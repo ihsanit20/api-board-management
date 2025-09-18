@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApplicationController;
+use App\Http\Controllers\ApplicationPaymentController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CenterController;
@@ -157,6 +158,8 @@ Route::get('/print/exam/{exam_id}/zamat/{zamat_id}/merit-list/{group_id?}', [Res
 
 Route::get('/summary/{exam_id}', [ResultSummaryController::class, 'summaryPrint']);
 
+Route::get('/application-payments/{id}', [ApplicationPaymentController::class, 'show']);
+
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 
     Route::get('/users', [UserController::class, 'index']);
@@ -179,6 +182,7 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
 
     Route::post('/quran-questions', [QuranQuestionController::class, 'store']);
     Route::put('/quran-questions/{id}', [QuranQuestionController::class, 'update']);
+
 
     Route::middleware('role:Admin,Super Admin,Developer')->group(function () {
         Route::post('/institutes', [InstituteController::class, 'store']);
@@ -222,6 +226,9 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::get('expenses', [ExpenseController::class, 'index']);
         Route::post('expenses', [ExpenseController::class, 'store']);
         Route::get('expenses/{expense}', [ExpenseController::class, 'show']);
+
+        Route::get('/application-payments', [ApplicationPaymentController::class, 'index']);
+        Route::post('/application-payments', [ApplicationPaymentController::class, 'store']);
     });
 
     Route::middleware('role:Super Admin,Developer')->group(function () {

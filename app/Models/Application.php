@@ -85,10 +85,10 @@ class Application extends Model
 
     // ⚠️ যদি টেবিলে সত্যিই Students নামে অন্য টেবিল থাকে ও relation লাগেই,
     // তাহলে নিচের নামটা বদলে নিন (e.g., enrolledStudents) — নইলে attribute 'students' এর সাথে সংঘর্ষ হবে।
-    public function students()
-    {
-        return $this->hasMany(Student::class);
-    }
+    // public function students()
+    // {
+    //     return $this->hasMany(Student::class);
+    // }
 
     /** ✅ 1-to-1: Application belongsTo ApplicationPayment via payment_id */
 

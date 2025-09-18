@@ -13,7 +13,8 @@ class ApplicationPaymentController extends Controller
     {
         $query = ApplicationPayment::query()
             ->with([
-                'application:id,exam_id,institute_id,zamat_id,total_amount,payment_status,payment_method',
+                // Payment → Application (hasOne via applications.payment_id)
+                'application:id,payment_id,exam_id,institute_id,zamat_id,total_amount,payment_status,payment_method',
                 'exam:id,name',
                 'institute:id,name,institute_code,phone',
                 'zamat:id,name',
@@ -29,8 +30,12 @@ class ApplicationPaymentController extends Controller
         if ($request->filled('zamat_id')) {
             $query->where('zamat_id', (int) $request->zamat_id);
         }
+
+        // ✅ application_id এখন relation দিয়ে ফিল্টার হবে
         if ($request->filled('application_id')) {
-            $query->where('application_id', (int) $request->application_id);
+            $query->whereHas('application', function (Builder $q) use ($request) {
+                $q->where('id', (int) $request->application_id);
+            });
         }
 
         // status
@@ -54,6 +59,11 @@ class ApplicationPaymentController extends Controller
                         $iq->where('name', 'like', "%{$s}%")
                             ->orWhere('institute_code', 'like', "%{$s}%")
                             ->orWhere('phone', 'like', "%{$s}%");
+                    })
+                    // চাইলে Application fields দিয়েও সার্চ করতে পারেন
+                    ->orWhereHas('application', function (Builder $aq) use ($s) {
+                        $aq->where('payment_status', 'like', "%{$s}%")
+                            ->orWhere('payment_method', 'like', "%{$s}%");
                     });
             });
         }
@@ -66,7 +76,6 @@ class ApplicationPaymentController extends Controller
             $to   = $dateTo   ? Carbon::parse($dateTo)->endOfDay()   : null;
 
             $query->where(function (Builder $qb) use ($from, $to) {
-                // Prefer paid_at if available
                 if ($from) {
                     $qb->where(function (Builder $q1) use ($from) {
                         $q1->whereNotNull('paid_at')->where('paid_at', '>=', $from)
@@ -92,7 +101,7 @@ class ApplicationPaymentController extends Controller
 
         if ($sort === 'paid_at') {
             // NULL paid_at last
-            $query->orderByRaw('paid_at IS NULL') // false(0) first -> not null first; flip to put null last
+            $query->orderByRaw('paid_at IS NULL')
                 ->orderBy('paid_at', $order)
                 ->orderBy('created_at', $order);
         } else {
@@ -127,12 +136,52 @@ class ApplicationPaymentController extends Controller
     public function show($id)
     {
         $payment = ApplicationPayment::with([
-            'application:id,exam_id,institute_id,zamat_id,total_amount,payment_status,payment_method',
+            'application:id,payment_id,exam_id,institute_id,zamat_id,total_amount,payment_status,payment_method',
             'exam:id,name',
             'institute:id,name,institute_code,phone',
             'zamat:id,name',
         ])->findOrFail($id);
 
         return response()->json($payment);
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'exam_id'        => ['nullable', 'integer'],
+            'institute_id'   => ['nullable', 'integer'],
+            'zamat_id'       => ['nullable', 'integer'],
+            'amount'         => ['required', 'numeric', 'min:0'],
+            'payment_method' => ['required', 'in:bkash,Bank,Cash Payment'],
+            'status'         => ['nullable', 'in:Pending,Completed,Failed,Cancelled'],
+            'trx_id'         => ['nullable', 'string', 'max:100'],
+            'payer_msisdn'   => ['nullable', 'string', 'max:20'],
+            'meta'           => ['nullable'], // array বা JSON string
+            'paid_at'        => ['nullable', 'date'],
+        ]);
+
+        // ডিফল্ট ও হালকা নরমালাইজেশন
+        $data['status'] = $data['status'] ?? 'Pending';
+
+        if (is_string($data['meta'] ?? null)) {
+            $decoded = json_decode($data['meta'], true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $data['meta'] = $decoded;
+            } else {
+                unset($data['meta']); // invalid JSON হলে বাদ
+            }
+        }
+
+        if ($data['status'] === 'Completed' && empty($data['paid_at'])) {
+            $data['paid_at'] = now();
+        }
+
+        $payment = ApplicationPayment::create($data);
+
+        // চাইলে সঙ্গে সঙ্গেই কিছু lookup relation লোড করাতে পারেন
+        return response()->json(
+            $payment->fresh()->load(['exam:id,name', 'institute:id,name,institute_code,phone', 'zamat:id,name']),
+            201
+        );
     }
 }
