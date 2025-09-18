@@ -399,16 +399,18 @@ class ApplicationController extends Controller
             return response()->json(['message' => 'Payment failed! Try Again', 'status' => false], 200);
         }
 
+        // 1) Execute (gateway)
         $response = $this->executePayment($paymentID);
+
+        // bKash Complete না হলে ফেইল বলে ধরা
         if ((data_get($response, 'transactionStatus')) !== 'Completed') {
             return response()->json(['message' => 'Payment failed! Try Again!', 'status' => false], 200);
         }
 
-        // ----- Simple extracts -----
-        $trxId   = data_get($response, 'trxID') ?? data_get($response, 'trxId') ?? data_get($response, 'transactionId');
-        $amount  = (float) (data_get($response, 'amount') ?? $application->total_amount);
+        // 2) Normalize fields
+        $trxId  = data_get($response, 'trxID') ?? data_get($response, 'trxId') ?? data_get($response, 'transactionId');
+        $amount = (float) (data_get($response, 'amount') ?? $application->total_amount);
 
-        // MSISDN: bKash → fallback institute phone
         $msisdnRaw = data_get($response, 'customerMsisdn')
             ?? data_get($response, 'payerMSISDN')
             ?? data_get($response, 'msisdn')
@@ -417,10 +419,10 @@ class ApplicationController extends Controller
         $msisdn = $msisdnRaw ? preg_replace('/\D+/', '', (string) $msisdnRaw) : null;
         $msisdn = $msisdn ? substr($msisdn, 0, 30) : null;
 
-        // paid_at: parse safely; parse fail হলে now()
         $paidAtRaw = data_get($response, 'completedTime')
             ?? data_get($response, 'paymentExecuteTime')
             ?? data_get($response, 'updateTime');
+
         try {
             $paidAt = $paidAtRaw ? Carbon::parse($paidAtRaw) : now();
         } catch (\Throwable $e) {
@@ -429,37 +431,38 @@ class ApplicationController extends Controller
 
         $meta = json_decode(json_encode($response), true);
 
-        // ----- Save atomically -----
+        // 3) Atomically: প্রথমে Payment create/update, তারপর Application-এ link + status
         DB::transaction(function () use ($application, $trxId, $amount, $msisdn, $paidAt, $meta) {
-            // Application update
-            $application->update([
-                'payment_method' => 'Online',
-                'payment_status' => 'Paid',
-            ]);
+            // (a) Payment create/update (idempotent by trx_id)
+            // application_id এখানে নেই, কারণ FK উল্টানো হয়েছে
+            $payment = ApplicationPayment::updateOrCreate(
+                ['trx_id' => $trxId], // unique key
+                [
+                    // ঐচ্ছিক denormalization (future রিপোর্টিং সুবিধা)
+                    'exam_id'        => $application->exam_id,
+                    'institute_id'   => $application->institute_id,
+                    'zamat_id'       => $application->zamat_id,
 
-            // Payment row (idempotent): trx_id থাকলে ওটাই key; না থাকলে (application_id + trx_id=null)
-            $where = $trxId
-                ? ['trx_id' => $trxId]
-                : ['application_id' => $application->id, 'trx_id' => null];
+                    'amount'         => $amount,
+                    'payment_method' => 'bkash',
+                    'status'         => 'Completed',
+                    'payer_msisdn'   => $msisdn,
+                    'meta'           => $meta,
+                    'paid_at'        => $paidAt,
+                ]
+            );
 
-            ApplicationPayment::updateOrCreate($where, [
-                'application_id' => $application->id,
-                'exam_id'        => $application->exam_id,
-                'institute_id'   => $application->institute_id,
-                'zamat_id'       => $application->zamat_id,
-
-                'amount'         => $amount,
-                'payment_method' => 'bkash',
-                'status'         => 'Completed',
-                'payer_msisdn'   => $msisdn,
-                'meta'           => $meta,
-                'paid_at'        => $paidAt,
-            ]);
+            // (b) Application update + link
+            $application->payment()->associate($payment);
+            $application->payment_method = 'Online';
+            $application->payment_status = 'Paid';
+            // চাইলে total_amount == amount মিলিয়ে দেখতে পারেন:
+            // if ((float)$application->total_amount !== (float)$amount) { ... log/flag ... }
+            $application->save();
         });
 
         return response()->json(['message' => 'Payment success', 'status' => true], 201);
     }
-
 
     public function updatePaymentStatus(Request $request, $id)
     {

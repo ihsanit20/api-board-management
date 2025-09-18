@@ -11,11 +11,6 @@ return new class extends Migration
         Schema::create('application_payments', function (Blueprint $table) {
             $table->id();
 
-            // Base FK
-            $table->foreignId('application_id')
-                ->constrained()
-                ->cascadeOnDelete();
-
             // Denormalized FKs for fast reporting/filtering
             $table->foreignId('exam_id')
                 ->constrained()             // references id on exams
@@ -41,7 +36,6 @@ return new class extends Migration
             $table->timestamps();
 
             // Helpful indexes
-            $table->index(['application_id', 'status']);
             $table->index(['exam_id', 'status']);
             $table->index(['institute_id', 'status']);
             $table->index(['zamat_id', 'status']);

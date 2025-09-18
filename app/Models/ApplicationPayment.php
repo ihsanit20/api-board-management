@@ -4,15 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ApplicationPayment extends Model
 {
     use HasFactory;
 
-    // Mass-assignable fields
+    // ✅ application_id আর নেই
     protected $fillable = [
-        'application_id',
         'exam_id',
         'institute_id',
         'zamat_id',
@@ -31,40 +29,28 @@ class ApplicationPayment extends Model
         'paid_at' => 'datetime',
     ];
 
-    // Auto-fill denormalized FKs from Application if not provided
+    // ⛔️ পুরনো booted() ব্লক লাগবে না, কারণ application_id ডিনর্মালাইজ করা হচ্ছে না
     protected static function booted(): void
     {
-        static::creating(function (self $payment) {
-            if ($payment->application_id && (! $payment->exam_id || ! $payment->institute_id || ! $payment->zamat_id)) {
-                if ($app = Application::query()
-                    ->select(['exam_id', 'institute_id', 'zamat_id'])
-                    ->find($payment->application_id)
-                ) {
-                    $payment->exam_id      = $payment->exam_id      ?? $app->exam_id;
-                    $payment->institute_id = $payment->institute_id ?? $app->institute_id;
-                    $payment->zamat_id     = $payment->zamat_id     ?? $app->zamat_id;
-                }
-            }
-        });
+        // no-op
     }
 
-    /** Relations */
-    public function application(): BelongsTo
+    /** ✅ 1-to-1 forward lookup: এই Payment কোন Application-এ যুক্ত */
+    public function application()
     {
-        return $this->belongsTo(Application::class);
+        return $this->hasOne(Application::class, 'payment_id');
     }
 
-    public function exam(): BelongsTo
+    // (ঐচ্ছিক) লুকআপ/রিপোর্টিং এর জন্য এগুলো রাখতে পারেন
+    public function exam()
     {
         return $this->belongsTo(Exam::class);
     }
-
-    public function institute(): BelongsTo
+    public function institute()
     {
         return $this->belongsTo(Institute::class);
     }
-
-    public function zamat(): BelongsTo
+    public function zamat()
     {
         return $this->belongsTo(Zamat::class);
     }
@@ -82,16 +68,16 @@ class ApplicationPayment extends Model
     {
         return $q->where('payment_method', 'bkash');
     }
-    public function scopeByExam($q, $examId)
+    public function scopeByExam($q, $id)
     {
-        return $q->where('exam_id', $examId);
+        return $q->where('exam_id', $id);
     }
-    public function scopeByInstitute($q, $instId)
+    public function scopeByInstitute($q, $id)
     {
-        return $q->where('institute_id', $instId);
+        return $q->where('institute_id', $id);
     }
-    public function scopeByZamat($q, $zamatId)
+    public function scopeByZamat($q, $id)
     {
-        return $q->where('zamat_id', $zamatId);
+        return $q->where('zamat_id', $id);
     }
 }
