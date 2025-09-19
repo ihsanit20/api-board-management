@@ -9,7 +9,6 @@ class Application extends Model
 {
     use HasFactory;
 
-    // ✅ শুধু এই ফিল্ডগুলো mass-assignable
     protected $fillable = [
         'exam_id',
         'zamat_id',
@@ -23,12 +22,11 @@ class Application extends Model
         'total_amount',
         'submitted_by',
         'approved_by',
-        'students',        // ⚠️ নীচের নোট দেখুন (attribute vs relation নাম সংঘর্ষ)
+        'students',
         'application_date',
-        'payment_id',      // ✅ নতুন (1-to-1 Payment FK)
+        'payment_id',
     ];
 
-    // (ঐচ্ছিক) DB ডিফল্টের সাথে মিল রেখে model default
     protected $attributes = [
         'payment_status' => 'Pending',
         'payment_method' => 'Offline',
@@ -44,7 +42,7 @@ class Application extends Model
         'submitted_by'     => 'integer',
         'approved_by'      => 'integer',
         'total_amount'     => 'integer',
-        'students'         => 'array',     // ⚠️ নীচের নোট দেখুন
+        'students'         => 'array',
         'application_date' => 'date:Y-m-d',
         'payment_id'       => 'integer',
     ];
@@ -90,13 +88,8 @@ class Application extends Model
     //     return $this->hasMany(Student::class);
     // }
 
-    /** ✅ 1-to-1: Application belongsTo ApplicationPayment via payment_id */
-
     public function payment()
     {
         return $this->belongsTo(ApplicationPayment::class, 'payment_id');
     }
-
-    // ⛔️ আগে যেটা ছিল (hasMany payments), এখন আর দরকার নেই:
-    // public function payments() { return $this->hasMany(ApplicationPayment::class); }
 }

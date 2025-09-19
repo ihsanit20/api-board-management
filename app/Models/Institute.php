@@ -34,4 +34,8 @@ class Institute extends Model
         return $this->hasMany(Student::class, 'institute_id', 'id');
     }
 
+    public function applicationPayments()
+    {
+        return $this->hasMany(ApplicationPayment::class, 'institute_id');
+    }
 }

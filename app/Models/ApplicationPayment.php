@@ -9,7 +9,6 @@ class ApplicationPayment extends Model
 {
     use HasFactory;
 
-    // ✅ application_id আর নেই
     protected $fillable = [
         'exam_id',
         'institute_id',
@@ -29,19 +28,16 @@ class ApplicationPayment extends Model
         'paid_at' => 'datetime',
     ];
 
-    // ⛔️ পুরনো booted() ব্লক লাগবে না, কারণ application_id ডিনর্মালাইজ করা হচ্ছে না
     protected static function booted(): void
     {
         // no-op
     }
 
-    /** ✅ 1-to-1 forward lookup: এই Payment কোন Application-এ যুক্ত */
-    public function application()
+    public function applications()
     {
-        return $this->hasOne(Application::class, 'payment_id');
+        return $this->hasMany(Application::class, 'payment_id');
     }
 
-    // (ঐচ্ছিক) লুকআপ/রিপোর্টিং এর জন্য এগুলো রাখতে পারেন
     public function exam()
     {
         return $this->belongsTo(Exam::class);

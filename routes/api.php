@@ -158,7 +158,10 @@ Route::get('/print/exam/{exam_id}/zamat/{zamat_id}/merit-list/{group_id?}', [Res
 
 Route::get('/summary/{exam_id}', [ResultSummaryController::class, 'summaryPrint']);
 
-Route::get('/application-payments/{id}', [ApplicationPaymentController::class, 'show']);
+Route::get('/application-payments/{id}', [ApplicationPaymentController::class, 'show'])
+    ->whereNumber('id');
+
+Route::get('/application-payments/{exam}/institutes/{institute}', [ApplicationPaymentController::class, 'byExamInstitute']);
 
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 
@@ -229,6 +232,7 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
 
         Route::get('/application-payments', [ApplicationPaymentController::class, 'index']);
         Route::post('/application-payments', [ApplicationPaymentController::class, 'store']);
+        Route::get('/application-payments/exams/{exam}', [ApplicationPaymentController::class, 'byExam']); // list page
     });
 
     Route::middleware('role:Super Admin,Developer')->group(function () {

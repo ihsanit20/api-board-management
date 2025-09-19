@@ -11,16 +11,13 @@ return new class extends Migration {
             $t->foreignId('payment_id')
                 ->nullable()
                 ->constrained('application_payments')
-                ->nullOnDelete()
-                ->unique(); // 1-to-1 enforce
+                ->nullOnDelete();
         });
     }
 
     public function down(): void
     {
         Schema::table('applications', function (Blueprint $t) {
-            // order matters: unique -> fk -> column
-            $t->dropUnique(['payment_id']);
             $t->dropConstrainedForeignId('payment_id');
         });
     }

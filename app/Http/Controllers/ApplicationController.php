@@ -429,16 +429,27 @@ class ApplicationController extends Controller
             $paidAt = now();
         }
 
-        $meta = json_decode(json_encode($response), true);
+        // ----- NEW: students_count প্রস্তুত করুন -----
+        // Application::$casts অনুযায়ী students ইতিমধ্যে array হবে; না হলে fallback হিসেবে 0
+        $studentsCount = is_array($application->students) ? count($application->students ?? []) : 0;
 
-        // 3) Atomically: প্রথমে Payment create/update, তারপর Application-এ link + status
+        // Gateway response কে array করে নিন
+        $gatewayMeta = json_decode(json_encode($response), true);
+
+        // ----- NEW: meta merge করে students_count যোগ করুন -----
+        $meta = array_merge($gatewayMeta ?? [], [
+            'students_count' => $studentsCount,
+            // ইচ্ছা করলে উৎসও ট্যাগ করতে পারেন:
+            // 'meta_source' => 'bkash_execute',
+            // 'application_id' => $application->id,
+        ]);
+
+        // 3) Atomically: Payment create/update, তারপর Application-এ link + status
         DB::transaction(function () use ($application, $trxId, $amount, $msisdn, $paidAt, $meta) {
             // (a) Payment create/update (idempotent by trx_id)
-            // application_id এখানে নেই, কারণ FK উল্টানো হয়েছে
             $payment = ApplicationPayment::updateOrCreate(
                 ['trx_id' => $trxId], // unique key
                 [
-                    // ঐচ্ছিক denormalization (future রিপোর্টিং সুবিধা)
                     'exam_id'        => $application->exam_id,
                     'institute_id'   => $application->institute_id,
                     'zamat_id'       => $application->zamat_id,
@@ -447,7 +458,7 @@ class ApplicationController extends Controller
                     'payment_method' => 'bkash',
                     'status'         => 'Completed',
                     'payer_msisdn'   => $msisdn,
-                    'meta'           => $meta,
+                    'meta'           => $meta,     // <-- students_count এখন meta-তে আছে
                     'paid_at'        => $paidAt,
                 ]
             );
@@ -456,8 +467,6 @@ class ApplicationController extends Controller
             $application->payment()->associate($payment);
             $application->payment_method = 'Online';
             $application->payment_status = 'Paid';
-            // চাইলে total_amount == amount মিলিয়ে দেখতে পারেন:
-            // if ((float)$application->total_amount !== (float)$amount) { ... log/flag ... }
             $application->save();
         });
 
