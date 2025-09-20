@@ -20,6 +20,7 @@ class ApplicationPayment extends Model
         'payer_msisdn',
         'meta',
         'paid_at',
+        'user_id',
     ];
 
     protected $casts = [
@@ -75,5 +76,17 @@ class ApplicationPayment extends Model
     public function scopeByZamat($q, $id)
     {
         return $q->where('zamat_id', $id);
+    }
+
+    /** Relations */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    // Optional quick scope
+    public function scopeByUser($q, $userId)
+    {
+        return $q->where('user_id', $userId);
     }
 }

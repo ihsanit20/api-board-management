@@ -56,6 +56,7 @@ class ApplicationPaymentController extends Controller
                 'exam:id,name',
                 'institute:id,name,institute_code,phone',
                 'zamat:id,name',
+                'user:id,name',
             ]);
 
         // ---- Filters ----
@@ -167,6 +168,7 @@ class ApplicationPaymentController extends Controller
             'exam:id,name',
             'institute:id,name,institute_code,phone',
             'zamat:id,name',
+            'user:id,name',
         ])->findOrFail($id);
 
         return response()->json($payment);
@@ -197,6 +199,7 @@ class ApplicationPaymentController extends Controller
                 'items.*.payer_msisdn'    => ['nullable', 'string', 'max:20'],
                 'items.*.meta'            => ['nullable'],
                 'items.*.paid_at'         => ['nullable', 'date'],
+                'items.*.user_id'         => ['nullable', 'exists:users,id'],
             ]);
 
             $items = $validated['items'];
@@ -211,6 +214,8 @@ class ApplicationPaymentController extends Controller
                     }
 
                     $row['status'] = $row['status'] ?? 'Pending';
+
+                    $row['user_id'] = $row['user_id'] ?? auth()->id();
 
                     if (isset($row['meta']) && is_string($row['meta'])) {
                         $decoded = json_decode($row['meta'], true);
@@ -238,6 +243,7 @@ class ApplicationPaymentController extends Controller
                 'exam:id,name',
                 'institute:id,name,institute_code,phone',
                 'zamat:id,name',
+                'user:id,name',
             ]);
 
             return response()->json([
@@ -256,6 +262,7 @@ class ApplicationPaymentController extends Controller
                 'payer_msisdn'   => ['nullable', 'string', 'max:20'],
                 'meta'           => ['nullable'],
                 'paid_at'        => ['nullable', 'date'],
+                'user_id'        => ['nullable', 'exists:users,id'],
             ]);
 
             // ✅ exam_id default
@@ -264,6 +271,8 @@ class ApplicationPaymentController extends Controller
             }
 
             $data['status'] = $data['status'] ?? 'Pending';
+
+            $data['user_id'] = $data['user_id'] ?? auth()->id();
 
             if (is_string($data['meta'] ?? null)) {
                 $decoded = json_decode($data['meta'], true);
@@ -285,7 +294,7 @@ class ApplicationPaymentController extends Controller
             $payment = ApplicationPayment::create($data);
 
             return response()->json(
-                $payment->fresh()->load(['exam:id,name', 'institute:id,name,institute_code,phone', 'zamat:id,name']),
+                $payment->fresh()->load(['exam:id,name', 'institute:id,name,institute_code,phone', 'zamat:id,name', 'user:id,name']),
                 201
             );
         }
@@ -359,7 +368,10 @@ class ApplicationPaymentController extends Controller
     public function byExamInstitute(Exam $exam, Institute $institute)
     {
         $payments = ApplicationPayment::query()
-            ->with(['zamat:id,name'])
+            ->with([
+                'zamat:id,name',
+                'user:id,name',
+            ])
             ->where('exam_id', $exam->id)
             ->where('institute_id', $institute->id)
             ->orderByRaw('paid_at IS NULL ASC')
@@ -370,6 +382,7 @@ class ApplicationPaymentController extends Controller
                 'exam_id',
                 'institute_id',
                 'zamat_id',
+                'user_id',
                 'amount',
                 'payment_method',
                 'status',
@@ -377,33 +390,45 @@ class ApplicationPaymentController extends Controller
                 'payer_msisdn',
                 'paid_at',
                 'meta',
-                'created_at'
+                'created_at',
             ]);
 
-        // summary for header
+        // meta থেকে শিক্ষার্থী সংখ্যা বের করার হেল্পার (students_count > students)
+        $extractStudents = function ($meta): int {
+            $arr = is_array($meta) ? $meta : (json_decode($meta ?? 'null', true) ?: []);
+            if (isset($arr['students_count']) && is_numeric($arr['students_count'])) {
+                return (int) $arr['students_count'];
+            }
+            if (isset($arr['students']) && is_numeric($arr['students'])) {
+                return (int) $arr['students'];
+            }
+            return 0;
+        };
+
+        // summary for header (দুটোর যেটা আছে সেটা যোগ)
         $totalAmount = (float) $payments->sum('amount');
-        $totalStudents = $payments->reduce(function ($carry, $p) {
-            $meta = is_array($p->meta) ? $p->meta : (json_decode($p->meta ?? 'null', true) ?: []);
-            return $carry + (int) ($meta['students_count'] ?? 0);
+        $totalStudents = $payments->reduce(function ($carry, $p) use ($extractStudents) {
+            return $carry + $extractStudents($p->meta);
         }, 0);
 
         return response()->json([
             'exam'      => ['id' => $exam->id, 'name' => $exam->name],
             'institute' => [
-                'id' => $institute->id,
-                'name' => $institute->name,
+                'id'             => $institute->id,
+                'name'           => $institute->name,
                 'institute_code' => $institute->institute_code,
-                'phone' => $institute->phone,
+                'phone'          => $institute->phone,
             ],
             'summary'   => [
                 'payments_count' => $payments->count(),
                 'total_amount'   => $totalAmount,
-                'total_students' => $totalStudents,
+                'total_students' => $totalStudents, // ✅ students / students_count—দুটোই সাপোর্টেড
             ],
-            'payments'  => $payments->map(function ($p) {
+            'payments'  => $payments->map(function ($p) use ($extractStudents) {
                 return [
                     'id'             => $p->id,
                     'zamat'          => $p->zamat ? ['id' => $p->zamat->id, 'name' => $p->zamat->name] : null,
+                    'user'           => $p->user ? ['id' => $p->user->id, 'name' => $p->user->name] : null,
                     'amount'         => (float) $p->amount,
                     'payment_method' => $p->payment_method,
                     'status'         => $p->status,
@@ -412,6 +437,7 @@ class ApplicationPaymentController extends Controller
                     'paid_at'        => optional($p->paid_at)->toDateTimeString(),
                     'created_at'     => optional($p->created_at)->toDateTimeString(),
                     'meta'           => $p->meta,
+                    'students'       => $extractStudents($p->meta),
                 ];
             })->values(),
         ]);
