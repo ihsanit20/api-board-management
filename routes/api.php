@@ -196,7 +196,9 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::post('/notices', [NoticeController::class, 'store']);
         Route::put('/notices/{id}', [NoticeController::class, 'update']);
 
-        Route::put('/applications/{id}/update-payment-status', [ApplicationController::class, 'updatePaymentStatus']);
+
+        Route::get('/applications/{application}/matching-payments', [ApplicationController::class, 'matchingPayments']);
+        Route::patch('/applications/{id}/payment-status', [ApplicationController::class, 'updatePaymentStatus']);
         Route::put('/applications/{id}/update-registration', [ApplicationController::class, 'updateRegistrationPart']);
         Route::put('/applications/{id}/update-students', [ApplicationController::class, 'updateStudentsPart']);
 

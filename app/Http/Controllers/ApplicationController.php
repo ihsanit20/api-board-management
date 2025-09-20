@@ -473,26 +473,6 @@ class ApplicationController extends Controller
         return response()->json(['message' => 'Payment success', 'status' => true], 201);
     }
 
-    public function updatePaymentStatus(Request $request, $id)
-    {
-        $request->validate([
-            'payment_status' => 'required|in:Pending,Paid',
-        ]);
-
-        try {
-            $application = self::$application ?? Application::findOrFail($id);
-
-            $application->update([
-                'payment_status' => $request->payment_status,
-                'approved_by' => Auth::guard('sanctum')->id() ?? null,
-            ]);
-
-            return response()->json(['message' => 'Payment status updated successfully']);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to update payment status', 'error' => $e->getMessage()], 500);
-        }
-    }
-
     private function generateRegistrationNumber($exam_id, &$previous_registration_numbers)
     {
         do {
@@ -594,63 +574,100 @@ class ApplicationController extends Controller
             ], 500);
         }
     }
-
-    public function getInvoice(Request $request)
+    public function matchingPayments(Application $application)
     {
-        $request->validate([
-            'institute_code' => ['required', 'exists:institutes,institute_code'],
-            'exam_id'        => ['nullable', 'exists:exams,id'], // exam_id optional করা হলো
-        ]);
-
-        // exam_id → না থাকলে সর্বশেষ exam ধরা হবে
-        $examId = $request->input('exam_id') ?? Exam::latest('id')->value('id');
-        $exam   = Exam::select('id', 'name')->findOrFail($examId);
-
-        $institute = Institute::select('id', 'name', 'institute_code', 'phone')
-            ->where('institute_code', $request->institute_code)
-            ->firstOrFail();
-
-        // Paid applications → জামাতভিত্তিক aggregate
-        $rows = Application::query()
-            ->where('exam_id', $exam->id)
-            ->where('institute_id', $institute->id)
-            ->where('payment_status', 'Paid')
-            ->select('zamat_id')
-            ->selectRaw('SUM(JSON_LENGTH(students)) as student_count')   // MySQL/MariaDB
-            ->selectRaw('SUM(total_amount) as paid_amount')
-            ->groupBy('zamat_id')
-            ->with('zamat:id,name')
-            ->get();
-
-        // রেসপন্স গঠন
-        $zamats = [];
-        $totalStudents = 0;
-        $totalAmount = 0.0;
-
-        foreach ($rows as $r) {
-            $name = $r->zamat->name ?? ('Zamat#' . $r->zamat_id);
-            $studentCount = (int) ($r->student_count ?? 0);
-            $paidAmount   = (float) ($r->paid_amount ?? 0);
-
-            $zamats[$name] = [
-                'zamat_id'      => $r->zamat_id,
-                'student_count' => $studentCount,
-                'paid_amount'   => $paidAmount,
-            ];
-
-            $totalStudents += $studentCount;
-            $totalAmount   += $paidAmount;
-        }
+        $payments = ApplicationPayment::query()
+            ->where('exam_id', $application->exam_id)
+            ->where('institute_id', $application->institute_id)
+            ->where('zamat_id', $application->zamat_id)
+            ->orderByDesc('paid_at')
+            ->orderByDesc('id')
+            ->with(['user:id,name'])     // to show who created/paid by
+            ->take(100)                  // sane limit
+            ->get([
+                'id',
+                'exam_id',
+                'institute_id',
+                'zamat_id',
+                'amount',
+                'payment_method',
+                'status',
+                'trx_id',
+                'paid_at',
+                'user_id'
+            ]);
 
         return response()->json([
-            'exam_id'        => $exam->id,
-            'exam_name'      => $exam->name,
-            'institute_name' => $institute->name,
-            'institute_code' => $institute->institute_code,
-            'phone'          => $institute->phone ?? null,
-            'zamats'         => $zamats,    // { zamatName: {student_count, paid_amount} }
-            'total_students' => $totalStudents,
-            'total_amount'   => $totalAmount,
+            'data' => $payments,
+            'application' => [
+                'id' => $application->id,
+                'total_amount' => (int) $application->total_amount,
+            ],
         ]);
+    }
+
+    /**
+     * Update application payment_status and (optionally) link payment_id
+     * Only link if:
+     * - payment matches exam_id + institute_id + zamat_id, AND
+     * - payment.status == 'Completed', AND
+     * - payment.amount >= application.total_amount
+     * If any condition fails => we still update status but ignore linking.
+     */
+    public function updatePaymentStatus(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'payment_status' => 'required|in:Pending,Paid',
+            'payment_id'     => 'nullable|integer',
+        ]);
+
+        return DB::transaction(function () use ($id, $validated) {
+            $application = Application::lockForUpdate()->findOrFail($id);
+            $linkedPaymentId = null;
+            $linkReason = null;
+
+            // Try to link payment if provided
+            if (!empty($validated['payment_id'])) {
+                $payment = ApplicationPayment::find($validated['payment_id']);
+
+                if ($payment) {
+                    $matchesCombo = (
+                        (int)$payment->exam_id      === (int)$application->exam_id &&
+                        (int)$payment->institute_id === (int)$application->institute_id &&
+                        (int)$payment->zamat_id     === (int)$application->zamat_id
+                    );
+
+                    if (!$matchesCombo) {
+                        $linkReason = 'Combo mismatch (exam/institute/zamat)';
+                    } elseif ($payment->status !== 'Completed') {
+                        $linkReason = 'Payment not Completed';
+                    } elseif ((float)$payment->amount < (float)$application->total_amount) {
+                        $linkReason = 'Payment amount is less than application amount';
+                    } else {
+                        // ✅ eligible to link
+                        $linkedPaymentId = $payment->id;
+                    }
+                } else {
+                    $linkReason = 'Payment not found';
+                }
+            }
+
+            // Update application fields
+            $application->payment_status = $validated['payment_status'];
+            $application->approved_by = Auth::guard('sanctum')->id() ?? $application->approved_by;
+
+            // Only set payment_id if eligible
+            if ($linkedPaymentId) {
+                $application->payment_id = $linkedPaymentId;
+            }
+
+            $application->save();
+
+            return response()->json([
+                'message' => 'Payment status updated',
+                'linked_payment_id' => $linkedPaymentId,
+                'link_skipped_reason' => $linkedPaymentId ? null : ($linkReason ?? null),
+            ]);
+        });
     }
 }
