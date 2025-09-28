@@ -146,6 +146,11 @@ class ApplicationController extends Controller
 
     public function printApplications(Request $request)
     {
+        // 1) exam_id resolve করা: ইনপুট না থাকলে সর্বশেষ Exam
+        $resolvedExamId = $request->filled('exam_id')
+            ? (int) $request->input('exam_id')
+            : (int) (Exam::query()->orderByDesc('id')->value('id'));
+
         $query = Application::query()
             ->with([
                 'exam:id,name',
@@ -156,36 +161,99 @@ class ApplicationController extends Controller
                 'submittedBy:id,name',
                 'approvedBy:id,name',
                 'group:id,name',
-                'students'
             ]);
 
-        // Apply filters based on request parameters
-        if ($request->has('zamat_id') && $request->zamat_id) {
+        // 2) Filters
+        if ($request->filled('zamat_id')) {
             $query->where('zamat_id', $request->zamat_id);
         }
 
-        if ($request->has('institute_code') && $request->institute_code) {
+        if ($request->filled('institute_code')) {
             $query->whereHas('institute', function ($q) use ($request) {
                 $q->where('institute_code', $request->institute_code);
             });
         }
 
-        if ($request->has('application_id') && $request->application_id) {
+        // application_id থাকলে সেটাই প্রাধান্য পাবে
+        if ($request->filled('application_id')) {
             $query->where('id', $request->application_id);
+        } else {
+            // নাহলে exam ফিল্টার প্রয়োগ হবে (resolvedExamId থাকলে)
+            if ($resolvedExamId) {
+                $query->where('exam_id', $resolvedExamId);
+            }
         }
 
-        // Fetch filtered applications
+        // 3) Fetch
         $applications = $query->latest('id')->get();
 
         ApplicationResource::withoutWrapping();
 
-        // Include students in the print view
-        $applications = ApplicationResource::collection($applications->map(function ($application) {
-            return new ApplicationResource($application, true); // Pass true to include students
-        }));
+        $applications = ApplicationResource::collection(
+            $applications->map(fn($application) => new ApplicationResource($application, true))
+        );
 
-        // JSON response for print
         return response()->json($applications);
+    }
+
+    public function centerZamatStudentSummary(Request $request)
+    {
+        // exam_id না এলে ডিফল্ট: সর্বশেষ Exam
+        $resolvedExamId = $request->integer('exam_id') ?: (int) Exam::query()->max('id');
+
+        $rows = DB::table('applications as a')
+            ->join('institutes as c', 'c.id', '=', 'a.center_id')   // center হলো institute
+            ->leftJoin('zamats as z', 'z.id', '=', 'a.zamat_id')
+            ->select([
+                'a.center_id',
+                'c.name as center_name',
+                'c.institute_code as center_code',
+                'a.zamat_id',
+                'z.name as zamat_name',
+                DB::raw('SUM(JSON_LENGTH(COALESCE(a.students, JSON_ARRAY()))) as students_count'),
+            ])
+            ->when($resolvedExamId, fn($q) => $q->where('a.exam_id', $resolvedExamId))
+            ->whereNotNull('a.center_id')
+            ->groupBy('a.center_id', 'c.name', 'c.institute_code', 'a.zamat_id', 'z.name')
+            ->orderBy('c.name')
+            ->orderBy('z.name')
+            ->get();
+
+        $centers = [];
+        $grandTotal = 0;
+
+        foreach ($rows as $r) {
+            $cid = (int) $r->center_id;
+            if (!isset($centers[$cid])) {
+                $centers[$cid] = [
+                    'center_id'      => $cid,
+                    'center_name'    => $r->center_name,
+                    'center_code'    => $r->center_code,
+                    'total_students' => 0,
+                    'zamats'         => [],
+                ];
+            }
+
+            $count = (int) $r->students_count;
+
+            $centers[$cid]['zamats'][] = [
+                'zamat_id'   => (int) $r->zamat_id,
+                'zamat_name' => $r->zamat_name,
+                'students'   => $count,
+            ];
+
+            $centers[$cid]['total_students'] += $count;
+            $grandTotal += $count;
+        }
+
+        $centers = array_values($centers);
+        usort($centers, fn($a, $b) => $b['total_students'] <=> $a['total_students']);
+
+        return response()->json([
+            'exam_id'     => $resolvedExamId,
+            'grand_total' => $grandTotal,
+            'centers'     => $centers,
+        ]);
     }
 
     public function getApplicationCounts(Request $request)
@@ -574,6 +642,7 @@ class ApplicationController extends Controller
             ], 500);
         }
     }
+
     public function matchingPayments(Application $application)
     {
         $payments = ApplicationPayment::query()

@@ -171,6 +171,7 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
     Route::get('/applications/print', [ApplicationController::class, 'printApplications']);
     Route::get('/applications/invoice', [ApplicationController::class, 'getInvoice']);
     Route::get('/applications/counts', [ApplicationController::class, 'getApplicationCounts']);
+    Route::get('/applications/center-zamat-students', [ApplicationController::class, 'centerZamatStudentSummary']);
     Route::get('/applications/zamat-wise-counts', [ApplicationController::class, 'getZamatWiseCounts']);
     Route::get('/applications/user-wise-counts', [ApplicationController::class, 'getUserWiseCounts']);
     Route::get('/applications/{id}', [ApplicationController::class, 'show'])->whereNumber('id');

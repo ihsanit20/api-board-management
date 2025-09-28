@@ -55,35 +55,35 @@ class StudentController extends Controller
         return response()->json($students);
     }
 
-    public function PrintStudents(Request $request)
-    {
-        $query = Student::with([
-            'exam:id,name',
-            'zamat:id,name,department_id',
-            'zamat.department:id,name',
-            'institute:id,name,institute_code',
-            'center:id,name,institute_code',
-            'group:id,name'
-        ]);
+    // public function PrintStudents(Request $request)
+    // {
+    //     $query = Student::with([
+    //         'exam:id,name',
+    //         'zamat:id,name,department_id',
+    //         'zamat.department:id,name',
+    //         'institute:id,name,institute_code',
+    //         'center:id,name,institute_code',
+    //         'group:id,name'
+    //     ]);
 
-        if ($request->has('application_id') && $request->application_id) {
-            $query->where('application_id', $request->application_id);
-        }
+    //     if ($request->has('application_id') && $request->application_id) {
+    //         $query->where('application_id', $request->application_id);
+    //     }
 
-        if ($request->has('institute_code') && $request->institute_code) {
-            $query->whereHas('institute', function ($q) use ($request) {
-                $q->where('institute_code', $request->institute_code);
-            });
-        }
+    //     if ($request->has('institute_code') && $request->institute_code) {
+    //         $query->whereHas('institute', function ($q) use ($request) {
+    //             $q->where('institute_code', $request->institute_code);
+    //         });
+    //     }
 
-        if ($request->has('zamat_id') && $request->zamat_id) {
-            $query->where('zamat_id', $request->zamat_id);
-        }
+    //     if ($request->has('zamat_id') && $request->zamat_id) {
+    //         $query->where('zamat_id', $request->zamat_id);
+    //     }
 
-        $students = $query->get();
+    //     $students = $query->get();
 
-        return response()->json($students);
-    }
+    //     return response()->json($students);
+    // }
 
     public function show($id)
     {

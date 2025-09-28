@@ -118,7 +118,6 @@ class PrintController extends Controller
         ]);
     }
 
-
     public function generateMarkSheet(Request $request)
     {
         $validated = $request->validate([
