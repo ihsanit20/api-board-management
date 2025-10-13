@@ -91,8 +91,7 @@ class InstituteController extends Controller
             return response()->json([]); // কোন application নেই
         }
 
-        // 1) সর্বশেষ পরীক্ষার জন্য institute+zamat লেভেলে স্টুডেন্ট কাউন্ট (SUM of JSON_LENGTH(students))
-        // zamats টেবিল join করে নাম এনেছি, যেন পরে আলাদা কুয়েরি না লাগে
+        // 1) সর্বশেষ পরীক্ষার জন্য institute+zamat লেভেলে স্টুডেন্ট কাউন্ট
         $aggByInstitute = Application::query()
             ->join('zamats', 'zamats.id', '=', 'applications.zamat_id')
             ->where('applications.exam_id', $latestExamId)
@@ -122,12 +121,13 @@ class InstituteController extends Controller
             $zRows = collect($aggByInstitute->get($inst->id, collect()))
                 ->map(function ($r) {
                     return [
-                        'zamat_id'     => (int) $r->zamat_id,
-                        'zamat_name'   => (string) $r->zamat_name,
-                        'students'     => (int) $r->students_count,
+                        'zamat_id'   => (int) $r->zamat_id,
+                        'zamat_name' => (string) $r->zamat_name,
+                        'students'   => (int) $r->students_count,
                     ];
                 })
-                ->sortBy('zamat_name') // চাইলে zamat_id দিয়ে sort করতে পারেন
+                // ✅ জামাতের আইডি ছোট→বড় (বড়গুলো শেষে)
+                ->sortBy('zamat_id', SORT_NUMERIC, false)
                 ->values();
 
             return [
@@ -142,6 +142,7 @@ class InstituteController extends Controller
 
         return response()->json($rows);
     }
+
 
     public function institutesWithoutApplications()
     {
