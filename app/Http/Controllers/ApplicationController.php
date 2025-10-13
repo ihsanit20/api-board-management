@@ -146,54 +146,200 @@ class ApplicationController extends Controller
 
     public function printApplications(Request $request)
     {
-        // 1) exam_id resolve করা: ইনপুট না থাকলে সর্বশেষ Exam
+        // --- 0) Back-compat: চাইলে আগের লিস্টই রিটার্ন করব
+        if ($request->boolean('flat')) {
+            $resolvedExamId = $request->filled('exam_id')
+                ? (int) $request->input('exam_id')
+                : (int) (Exam::query()->orderByDesc('id')->value('id'));
+
+            $query = Application::query()
+                ->with([
+                    'exam:id,name',
+                    'zamat:id,name',
+                    'area:id,name',
+                    'institute:id,name,institute_code',
+                    'center:id,name,institute_code',
+                    'submittedBy:id,name',
+                    'approvedBy:id,name',
+                    'group:id,name',
+                ]);
+
+            if ($request->filled('zamat_id')) {
+                $query->where('zamat_id', $request->zamat_id);
+            }
+            if ($request->filled('institute_code')) {
+                $query->whereHas('institute', function ($q) use ($request) {
+                    $q->where('institute_code', $request->institute_code);
+                });
+            }
+            if ($request->filled('application_id')) {
+                $query->where('id', $request->application_id);
+            } elseif ($resolvedExamId) {
+                $query->where('exam_id', $resolvedExamId);
+            }
+
+            $applications = $query->latest('id')->get();
+
+            ApplicationResource::withoutWrapping();
+            $applications = ApplicationResource::collection(
+                $applications->map(fn($a) => new ApplicationResource($a, true))
+            );
+            return response()->json($applications);
+        }
+
+        // --- 1) New print-grouped response
+        $perPage = max(1, (int) $request->integer('per_page', 10));
+
+        // 1.1) exam_id resolve
         $resolvedExamId = $request->filled('exam_id')
             ? (int) $request->input('exam_id')
             : (int) (Exam::query()->orderByDesc('id')->value('id'));
 
+        // 1.2) base query
         $query = Application::query()
+            ->select([
+                'id',
+                'exam_id',
+                'institute_id',
+                'zamat_id',
+                'area_id',
+                'center_id',
+                'group_id',
+                'students',
+                'application_date',
+                'created_at'
+            ])
             ->with([
                 'exam:id,name',
                 'zamat:id,name',
-                'area:id,name',
                 'institute:id,name,institute_code',
+                'area:id,name',
                 'center:id,name,institute_code',
-                'submittedBy:id,name',
-                'approvedBy:id,name',
                 'group:id,name',
             ]);
 
-        // 2) Filters
+        // 1.3) filters
         if ($request->filled('zamat_id')) {
             $query->where('zamat_id', $request->zamat_id);
         }
-
         if ($request->filled('institute_code')) {
             $query->whereHas('institute', function ($q) use ($request) {
                 $q->where('institute_code', $request->institute_code);
             });
         }
-
-        // application_id থাকলে সেটাই প্রাধান্য পাবে
         if ($request->filled('application_id')) {
             $query->where('id', $request->application_id);
-        } else {
-            // নাহলে exam ফিল্টার প্রয়োগ হবে (resolvedExamId থাকলে)
-            if ($resolvedExamId) {
-                $query->where('exam_id', $resolvedExamId);
+        } elseif ($resolvedExamId) {
+            $query->where('exam_id', $resolvedExamId);
+        }
+
+        // 1.4) fetch
+        $apps = $query->get();
+
+        // 2) Group → Institute → Zamat
+        $pages = [];
+        $now   = now()->toDateTimeString();
+
+        $appsByInstitute = $apps->groupBy('institute_id');
+
+        foreach ($appsByInstitute as $instituteId => $appsOfInst) {
+            // name/code for header
+            $inst   = optional($appsOfInst->first()->institute);
+            $instId = (int) $instituteId;
+
+            $appsByZamat = $appsOfInst->groupBy('zamat_id');
+
+            foreach ($appsByZamat as $zamatId => $appsOfZamat) {
+                $first     = $appsOfZamat->first();
+                $zamat     = optional($first->zamat);
+                $exam      = optional($first->exam);
+                $area      = optional($first->area);
+                $center    = optional($first->center);
+                $group     = optional($first->group);
+
+                // 2.1) Flatten/normalize students from all applications of same inst+zamat
+                $students = $appsOfZamat->flatMap(function ($app) {
+                    $appStudents = collect($app->students ?? []);
+                    // normalize + bring some app-level fields for print row
+                    return $appStudents->map(function ($s) use ($app) {
+                        return [
+                            'name'               => (string)($s['name'] ?? ''),
+                            'name_arabic'        => $s['name_arabic'] ?? null,
+                            'father_name'        => (string)($s['father_name'] ?? ''),
+                            'father_name_arabic' => $s['father_name_arabic'] ?? null,
+                            'date_of_birth'      => $s['date_of_birth'] ?? null,
+                            'para'               => $s['para'] ?? null,
+                            'address'            => $s['address'] ?? null,
+
+                            'application_id'     => (int)$app->id,
+                            'application_date'   => (string)($app->application_date ?? $app->created_at),
+                            'area_name'          => (string)(optional($app->area)->name ?? ''),
+                            'center_name'        => (string)(optional($app->center)->name ?? ''),
+                            'group_name'         => (string)(optional($app->group)->name ?? ''),
+                        ];
+                    });
+                })
+                    // সাজানো: নাম অনুযায়ী (আপনার ইচ্ছায় বদলাতে পারবেন)
+                    ->sortBy([
+                        ['name', 'asc'],
+                        ['father_name', 'asc'],
+                    ])
+                    ->values()
+                    ->all();
+
+                $totalStudents = count($students);
+                if ($totalStudents === 0) {
+                    continue;
+                }
+
+                // 2.2) Chunk per page (max $perPage)
+                $chunks = array_chunk($students, $perPage);
+                $pageCount = count($chunks);
+
+                foreach ($chunks as $idx => $chunk) {
+                    // per-page serial 1..$perPage
+                    $chunk = array_values(array_map(function ($i, $row) {
+                        $row['sl'] = $i + 1;
+                        return $row;
+                    }, array_keys($chunk), $chunk));
+
+                    $pages[] = [
+                        'meta' => [
+                            'generated_at'   => $now,
+                            'exam'           => [
+                                'id'   => (int)($first->exam_id),
+                                'name' => (string)($exam->name ?? ''),
+                            ],
+                            'institute'      => [
+                                'id'    => $instId,
+                                'name'  => (string)($inst->name ?? ''),
+                                'code'  => (string)($inst->institute_code ?? ''),
+                            ],
+                            'zamat'          => [
+                                'id'   => (int)($zamatId),
+                                'name' => (string)($zamat->name ?? ''),
+                            ],
+                            // Optional headers (যদি প্রিন্টে দেখাতে চান)
+                            'area_name'      => (string)($area->name ?? ''),
+                            'center_name'    => (string)($center->name ?? ''),
+                            'group_name'     => (string)($group->name ?? ''),
+                            // paging
+                            'page'           => $idx + 1,
+                            'pages'          => $pageCount,
+                            'per_page'       => $perPage,
+                            'total_students' => $totalStudents,
+                        ],
+                        'students' => $chunk,
+                    ];
+                }
             }
         }
 
-        // 3) Fetch
-        $applications = $query->latest('id')->get();
-
-        ApplicationResource::withoutWrapping();
-
-        $applications = ApplicationResource::collection(
-            $applications->map(fn($application) => new ApplicationResource($application, true))
-        );
-
-        return response()->json($applications);
+        return response()->json([
+            'exam_id'  => $resolvedExamId,
+            'per_page' => $perPage,
+            'pages'    => $pages,
+        ]);
     }
 
     public function centerZamatStudentSummary(Request $request)

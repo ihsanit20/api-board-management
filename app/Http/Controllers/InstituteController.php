@@ -91,15 +91,54 @@ class InstituteController extends Controller
             return response()->json([]); // কোন application নেই
         }
 
-        $rows = Institute::query()
+        // 1) সর্বশেষ পরীক্ষার জন্য institute+zamat লেভেলে স্টুডেন্ট কাউন্ট (SUM of JSON_LENGTH(students))
+        // zamats টেবিল join করে নাম এনেছি, যেন পরে আলাদা কুয়েরি না লাগে
+        $aggByInstitute = Application::query()
+            ->join('zamats', 'zamats.id', '=', 'applications.zamat_id')
+            ->where('applications.exam_id', $latestExamId)
+            ->selectRaw("
+            applications.institute_id,
+            applications.zamat_id,
+            zamats.name as zamat_name,
+            SUM(COALESCE(JSON_LENGTH(applications.students), 0)) as students_count
+        ")
+            ->groupBy('applications.institute_id', 'applications.zamat_id', 'zamats.name')
+            ->get()
+            ->groupBy('institute_id'); // → [institute_id => [rows...]]
+
+        // 2) ফোন-ভ্যালিডেশনসহ ইনস্টিটিউট লিস্ট (আপনার আগের ফিল্টারগুলো অপরিবর্তিত)
+        $institutes = Institute::query()
             ->whereHas('applications', function ($q) use ($latestExamId) {
                 $q->where('exam_id', $latestExamId);
             })
             ->whereNotNull('phone')
-            ->whereRaw('LENGTH(phone) = 11')
+            // ->whereRaw('LENGTH(phone) = 11')
             ->select('id', 'name', 'phone', 'institute_code')
             ->oldest('institute_code')
             ->get();
+
+        // 3) ম্যাপ করে কাঙ্ক্ষিত JSON স্ট্রাকচার বানানো
+        $rows = $institutes->map(function ($inst) use ($aggByInstitute) {
+            $zRows = collect($aggByInstitute->get($inst->id, collect()))
+                ->map(function ($r) {
+                    return [
+                        'zamat_id'     => (int) $r->zamat_id,
+                        'zamat_name'   => (string) $r->zamat_name,
+                        'students'     => (int) $r->students_count,
+                    ];
+                })
+                ->sortBy('zamat_name') // চাইলে zamat_id দিয়ে sort করতে পারেন
+                ->values();
+
+            return [
+                'id'              => (int) $inst->id,
+                'name'            => (string) $inst->name,
+                'phone'           => (string) $inst->phone,
+                'institute_code'  => (string) $inst->institute_code,
+                'total_students'  => (int) $zRows->sum('students'),
+                'zamats'          => $zRows, // [{ zamat_id, zamat_name, students }]
+            ];
+        });
 
         return response()->json($rows);
     }
