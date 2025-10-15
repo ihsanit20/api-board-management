@@ -361,7 +361,7 @@ class ApplicationController extends Controller
             ->when($resolvedExamId, fn($q) => $q->where('a.exam_id', $resolvedExamId))
             ->whereNotNull('a.center_id')
             ->groupBy('a.center_id', 'c.name', 'c.institute_code', 'a.zamat_id', 'z.name')
-            ->orderBy('c.name')
+            ->orderBy('c.institute_code')
             ->orderBy('z.name')
             ->get();
 
@@ -393,7 +393,7 @@ class ApplicationController extends Controller
         }
 
         $centers = array_values($centers);
-        usort($centers, fn($a, $b) => $b['total_students'] <=> $a['total_students']);
+        // usort($centers, fn($a, $b) => $b['total_students'] <=> $a['total_students']);
 
         return response()->json([
             'exam_id'     => $resolvedExamId,
