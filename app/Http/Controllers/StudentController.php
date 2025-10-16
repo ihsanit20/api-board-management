@@ -214,58 +214,6 @@ class StudentController extends Controller
         return response()->json($data);
     }
 
-    // public function PrintEnvelop(Request $request)
-    // {
-    //     $areaName = $request->input('area_name');
-    //     $instituteCode = $request->input('institute_code');
-
-    //     $query = DB::table('students')
-    //         ->join('institutes', 'students.institute_id', '=', 'institutes.id')
-    //         ->join('areas', 'institutes.area_id', '=', 'areas.id')
-    //         ->join('zamats', 'students.zamat_id', '=', 'zamats.id')
-    //         ->select(
-    //             'areas.name as area_name',
-    //             'institutes.name as institute_name',
-    //             'institutes.institute_code',
-    //             'institutes.phone',
-    //             'zamats.name as zamat_name',
-    //             DB::raw('COUNT(students.id) as student_count')
-    //         )
-    //         ->groupBy('areas.name', 'institutes.name', 'institutes.institute_code', 'institutes.phone', 'zamats.name');
-
-    //     // filter by last exam id
-    //     $query->where('exam_id', Exam::max('id'));
-
-    //     if ($areaName) {
-    //         $query->where('areas.name', $areaName);
-    //     }
-
-    //     if ($instituteCode) {
-    //         $query->where('institutes.institute_code', $instituteCode);
-    //     }
-
-    //     $data = $query->get()
-    //         ->groupBy('area_name')
-    //         ->map(function ($area) {
-    //             return $area->groupBy('institute_name')->map(function ($institutes) {
-    //                 $institute = $institutes->first();
-    //                 return [
-    //                     'institute_name' => $institute->institute_name,
-    //                     'institute_code' => $institute->institute_code,
-    //                     'phone' => $institute->phone,
-    //                     'zamat_counts' => $institutes->map(function ($item) {
-    //                         return [
-    //                             'zamat_name' => $item->zamat_name,
-    //                             'student_count' => $item->student_count,
-    //                         ];
-    //                     })->values()
-    //                 ];
-    //             })->values();
-    //         });
-
-    //     return response()->json($data);
-    // }
-
     public function PrintEnvelop(Request $request)
     {
         $areaName = $request->input('area_name');
@@ -274,7 +222,7 @@ class StudentController extends Controller
         $lastExamId = Exam::max('id'); // সর্বশেষ exam id
 
         $query = DB::table('applications')
-            ->join('institutes', 'institutes.id', '=', 'applications.center_id')
+            ->join('institutes', 'institutes.id', '=', 'applications.institute_id')
             ->join('areas', 'institutes.area_id', '=', 'areas.id')
             ->leftJoin('zamats', 'zamats.id', '=', 'applications.zamat_id')
             ->select([
@@ -286,7 +234,7 @@ class StudentController extends Controller
                 DB::raw('SUM(JSON_LENGTH(COALESCE(applications.students, JSON_ARRAY()))) as student_count'),
             ])
             ->where('applications.exam_id', $lastExamId)
-            ->where('applications.payment_status', 'Paid')
+            // ->where('applications.payment_status', 'Paid')
             ->groupBy(
                 'areas.name',
                 'institutes.name',
