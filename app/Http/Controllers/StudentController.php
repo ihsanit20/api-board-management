@@ -242,7 +242,9 @@ class StudentController extends Controller
                 'institutes.phone',
                 'zamats.name'
             )
-            ->orderBy('institutes.institute_code');
+            ->orderBy('institutes.institute_code')
+            ->orderBy('zamats.id')
+            ;
 
         if ($areaName) {
             $query->where('areas.name', $areaName);
