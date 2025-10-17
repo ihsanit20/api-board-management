@@ -230,6 +230,7 @@ class StudentController extends Controller
                 'institutes.name as institute_name',
                 'institutes.institute_code',
                 'institutes.phone',
+                'zamats.id as zamat_id',
                 'zamats.name as zamat_name',
                 DB::raw('SUM(JSON_LENGTH(COALESCE(applications.students, JSON_ARRAY()))) as student_count'),
             ])
@@ -240,6 +241,7 @@ class StudentController extends Controller
                 'institutes.name',
                 'institutes.institute_code',
                 'institutes.phone',
+                'zamats.id',
                 'zamats.name'
             )
             ->orderBy('institutes.institute_code')
