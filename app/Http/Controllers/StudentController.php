@@ -265,12 +265,15 @@ class StudentController extends Controller
                         'institute_name' => $institute->institute_name,
                         'institute_code' => $institute->institute_code,
                         'phone' => $institute->phone,
-                        'zamat_counts' => $institutes->map(function ($item) {
-                            return [
-                                'zamat_name' => $item->zamat_name,
-                                'student_count' => $item->student_count,
-                            ];
-                        })->values()
+                        'zamat_counts' => $institutes
+                            ->sortBy('zamat_id') // 👉 sortBy zamat_id
+                            ->map(function ($item) {
+                                return [
+                                    'zamat_name' => $item->zamat_name,
+                                    'student_count' => $item->student_count,
+                                ];
+                            })
+                            ->values()
                     ];
                 })->values();
             });
