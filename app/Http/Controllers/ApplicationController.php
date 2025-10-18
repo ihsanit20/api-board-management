@@ -19,6 +19,30 @@ class ApplicationController extends Controller
 
     private static $application = null;
 
+    private const MAX_STUDENTS = 99;
+
+    /**
+     * application.id ভিত্তিতে প্রত্যেক শিক্ষার্থীর registration বানায়:
+     * id*100 + index(1..99) => 10101, 10102, ... 10199
+     * count > 99 হলে 422 দেয়।
+     */
+    private function assignStudentRegistrations(Application $application, array $students): array
+    {
+        $count = count($students);
+        if ($count > self::MAX_STUDENTS) {
+            abort(422, 'একটি ফরমে সর্বোচ্চ ' . self::MAX_STUDENTS . ' জন পরীক্ষার্থী যোগ করা যাবে।');
+        }
+
+        $out = [];
+        foreach (array_values($students) as $idx => $s) {
+            $i = $idx + 1; // 1..N
+            // সম্পূর্ণ সংখ্যায় রাখতে শুদ্ধ হিসাব:
+            $s['registration'] = ($application->id * 100) + $i; // e.g., 101*100 + 1 = 10101
+            $out[] = $s;
+        }
+        return $out;
+    }
+
     public function index(Request $request)
     {
         $query = Application::query()
@@ -263,6 +287,7 @@ class ApplicationController extends Controller
                     // normalize + bring some app-level fields for print row
                     return $appStudents->map(function ($s) use ($app) {
                         return [
+                            'registration'        => $s['registration'] ?? null,
                             'name'               => (string)($s['name'] ?? ''),
                             'name_arabic'        => $s['name_arabic'] ?? null,
                             'father_name'        => (string)($s['father_name'] ?? ''),
@@ -280,10 +305,10 @@ class ApplicationController extends Controller
                     });
                 })
                     // সাজানো: নাম অনুযায়ী (আপনার ইচ্ছায় বদলাতে পারবেন)
-                    ->sortBy([
-                        ['name', 'asc'],
-                        ['father_name', 'asc'],
-                    ])
+                    ->sortBy(function ($row) {
+                        $r = $row['registration'] ?? null;
+                        return is_numeric($r) ? (int) $r : PHP_INT_MAX;
+                    })
                     ->values()
                     ->all();
 
@@ -430,7 +455,6 @@ class ApplicationController extends Controller
         ]);
     }
 
-
     public function getZamatWiseCounts(Request $request)
     {
         $examId = $request->input('exam_id') ?? Exam::latest('id')->value('id');
@@ -533,51 +557,61 @@ class ApplicationController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'exam_id' => 'required|exists:exams,id',
-            'institute_id' => 'required|exists:institutes,id',
-            'zamat_id' => 'required|exists:zamats,id',
-            'group_id' => 'nullable|exists:groups,id',
-            'area_id' => 'nullable|exists:areas,id',
-            'center_id' => 'nullable|exists:institutes,id',
+            'exam_id'        => 'required|exists:exams,id',
+            'institute_id'   => 'required|exists:institutes,id',
+            'zamat_id'       => 'required|exists:zamats,id',
+            'group_id'       => 'nullable|exists:groups,id',
+            'area_id'        => 'nullable|exists:areas,id',
+            'center_id'      => 'nullable|exists:institutes,id',
 
-            'students' => 'required|array|min:1',
-
-            'students.*.name' => 'required|string|max:255',
-            'students.*.name_arabic' => 'nullable|string|max:255',
-            'students.*.father_name' => 'required|string|max:255',
+            // এখানে max:99 গার্ড
+            'students'                   => 'required|array|min:1|max:' . self::MAX_STUDENTS,
+            'students.*.name'            => 'required|string|max:255',
+            'students.*.name_arabic'     => 'nullable|string|max:255',
+            'students.*.father_name'     => 'required|string|max:255',
             'students.*.father_name_arabic' => 'nullable|string|max:255',
-            'students.*.date_of_birth' => 'required|date|before:today',
-            'students.*.para' => 'nullable|integer|exists:para_groups,id',
-            'students.*.address' => 'nullable|string|max:255',
+            'students.*.date_of_birth'   => 'required|date|before:today',
+            'students.*.para'            => 'nullable|integer|exists:para_groups,id',
+            'students.*.address'         => 'nullable|string|max:255',
 
-            'total_amount' => 'required|numeric|min:0',
+            'total_amount'   => 'required|numeric|min:0',
             'payment_method' => 'nullable|string|in:Online,Offline',
         ]);
 
         try {
-            $application = Application::create([
-                'exam_id' => $request->exam_id,
-                'area_id' => $request->area_id,
-                'institute_id' => $request->institute_id,
-                'zamat_id' => $request->zamat_id,
-                'group_id' => $request->group_id,
-                'center_id' => $request->center_id,
-                'payment_status' => 'Pending',
-                'total_amount' => $request->total_amount, //
-                'payment_method' => $request->payment_method ?? 'Offline',
-                'submitted_by' => Auth::guard('sanctum')->id() ?? null,
-                'application_date' => $request->application_date ?? now(),
-                'students' => $request->students,
-            ]);
+            return DB::transaction(function () use ($request) {
+                // প্রথমে Application তৈরি (id পেতে হবে)
+                $application = Application::create([
+                    'exam_id'         => $request->exam_id,
+                    'area_id'         => $request->area_id,
+                    'institute_id'    => $request->institute_id,
+                    'zamat_id'        => $request->zamat_id,
+                    'group_id'        => $request->group_id,
+                    'center_id'       => $request->center_id,
+                    'payment_status'  => 'Pending',
+                    'total_amount'    => $request->total_amount,
+                    'payment_method'  => $request->payment_method ?? 'Offline',
+                    'submitted_by'    => Auth::guard('sanctum')->id() ?? null,
+                    'application_date' => $request->application_date ?? now(),
+                    'students'        => [], // সাময়িক; নিচে রেজিস্ট্রেশনসহ সেট করব
+                ]);
 
-            $application->load('institute');
+                // এখন registration নম্বর বসাই
+                $studentsWithReg = $this->assignStudentRegistrations($application, $request->students);
+                $application->update(['students' => $studentsWithReg]);
 
-            return response()->json([
-                'message' => 'Application submitted successfully',
-                'application' => $application
-            ], 201);
+                $application->load('institute');
+
+                return response()->json([
+                    'message'     => 'Application submitted successfully',
+                    'application' => $application
+                ], 201);
+            });
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to submit application', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Failed to submit application',
+                'error'   => $e->getMessage()
+            ], 500);
         }
     }
 
