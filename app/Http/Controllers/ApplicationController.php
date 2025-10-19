@@ -170,6 +170,45 @@ class ApplicationController extends Controller
 
     public function printApplications(Request $request)
     {
+        // --- Payment Status filter param (supports: status or payment_status)
+        $statusParam = $request->input('status', $request->input('payment_status', 'Paid'));
+
+        // Helper: apply payment_status filter to a query
+        $applyStatusFilter = function ($query, $statusParam) {
+            if (!$statusParam || strtolower(is_array($statusParam) ? 'x' : $statusParam) === 'all') {
+                return $query; // no-op
+            }
+
+            $allowed = ['Paid', 'Pending', 'Failed'];
+
+            $normalize = function ($s) {
+                $s = strtolower(trim((string) $s));
+                $aliases = [
+                    'paid'      => 'Paid',
+                    'success'   => 'Paid',
+                    'completed' => 'Paid',
+                    'pending'   => 'Pending',
+                    'failed'    => 'Failed',
+                ];
+                return $aliases[$s] ?? ucfirst($s);
+            };
+
+            if (is_array($statusParam)) {
+                $values = array_map($normalize, $statusParam);
+                $values = array_values(array_intersect($values, $allowed));
+                if (!empty($values)) {
+                    $query->whereIn('payment_status', $values);
+                }
+            } else {
+                $value = $normalize($statusParam);
+                if (in_array($value, $allowed, true)) {
+                    $query->where('payment_status', $value);
+                }
+            }
+
+            return $query;
+        };
+
         // --- 0) Back-compat: চাইলে আগের লিস্টই রিটার্ন করব
         if ($request->boolean('flat')) {
             $resolvedExamId = $request->filled('exam_id')
@@ -188,6 +227,7 @@ class ApplicationController extends Controller
                     'group:id,name',
                 ]);
 
+            // filters
             if ($request->filled('zamat_id')) {
                 $query->where('zamat_id', $request->zamat_id);
             }
@@ -201,6 +241,9 @@ class ApplicationController extends Controller
             } elseif ($resolvedExamId) {
                 $query->where('exam_id', $resolvedExamId);
             }
+
+            // ✅ apply payment_status filter
+            $applyStatusFilter($query, $statusParam);
 
             $applications = $query->latest('id')->get();
 
@@ -231,7 +274,9 @@ class ApplicationController extends Controller
                 'group_id',
                 'students',
                 'application_date',
-                'created_at'
+                'created_at',
+                // (optional) keep in select for clarity; not strictly required to filter
+                'payment_status',
             ])
             ->with([
                 'exam:id,name',
@@ -256,6 +301,9 @@ class ApplicationController extends Controller
         } elseif ($resolvedExamId) {
             $query->where('exam_id', $resolvedExamId);
         }
+
+        // ✅ apply payment_status filter
+        $applyStatusFilter($query, $statusParam);
 
         // 1.4) fetch
         $apps = $query->get();
@@ -304,7 +352,7 @@ class ApplicationController extends Controller
                         ];
                     });
                 })
-                    // সাজানো: নাম অনুযায়ী (আপনার ইচ্ছায় বদলাতে পারবেন)
+                    // সাজানো: রেজিস্ট্রেশন অনুযায়ী (ইচ্ছা করলে বদলাতে পারবেন)
                     ->sortBy(function ($row) {
                         $r = $row['registration'] ?? null;
                         return is_numeric($r) ? (int) $r : PHP_INT_MAX;
@@ -366,6 +414,7 @@ class ApplicationController extends Controller
             'pages'    => $pages,
         ]);
     }
+
 
     public function centerZamatStudentSummary(Request $request)
     {
