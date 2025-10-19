@@ -721,18 +721,6 @@ class ApplicationController extends Controller
         return response()->json(['message' => 'Payment success', 'status' => true], 201);
     }
 
-    private function generateRegistrationNumber($exam_id, &$previous_registration_numbers)
-    {
-        do {
-            $rand = rand(10000, 99999);
-            $new_registration_number = $exam_id . $rand;
-        } while (in_array($new_registration_number, $previous_registration_numbers));
-
-        $previous_registration_numbers[] = $new_registration_number;
-
-        return $new_registration_number;
-    }
-
     public function updateRegistrationPart(Request $request, $id)
     {
         $request->validate([
