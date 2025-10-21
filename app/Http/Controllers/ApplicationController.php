@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\ApplicationResource;
 use App\Models\Application;
 use App\Models\Exam;
-use App\Models\Institute;
+use App\Models\ParaGroup;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Msilabs\Bkash\BkashPayment;
@@ -275,7 +275,6 @@ class ApplicationController extends Controller
                 'students',
                 'application_date',
                 'created_at',
-                // (optional) keep in select for clarity; not strictly required to filter
                 'payment_status',
             ])
             ->with([
@@ -305,8 +304,30 @@ class ApplicationController extends Controller
         // ✅ apply payment_status filter
         $applyStatusFilter($query, $statusParam);
 
-        // 1.4) fetch
+        // 1.4) fetch apps
         $apps = $query->get();
+
+        /* ---------- NEW: একবারে সব para id -> name ম্যাপ ---------- */
+        $paraIds = $apps->flatMap(function ($app) {
+            return collect($app->students ?? [])->pluck('para');
+        })
+            ->filter(function ($id) {
+                return !is_null($id) && $id !== '';
+            })
+            ->map(function ($id) {
+                return is_numeric($id) ? (int) $id : $id;
+            })
+            ->unique()
+            ->values();
+
+        $paraMap = [];
+        if ($paraIds->isNotEmpty()) {
+            $paraMap = ParaGroup::query()
+                ->whereIn('id', $paraIds)
+                ->pluck('name', 'id')
+                ->toArray();
+        }
+        /* ---------- /NEW ---------- */
 
         // 2) Group → Institute → Zamat
         $pages = [];
@@ -329,11 +350,21 @@ class ApplicationController extends Controller
                 $center    = optional($first->center);
                 $group     = optional($first->group);
 
-                // 2.1) Flatten/normalize students from all applications of same inst+zamat
-                $students = $appsOfZamat->flatMap(function ($app) {
+                // 2.1) Flatten/normalize students
+                $students = $appsOfZamat->flatMap(function ($app) use ($paraMap) {
                     $appStudents = collect($app->students ?? []);
-                    // normalize + bring some app-level fields for print row
-                    return $appStudents->map(function ($s) use ($app) {
+                    return $appStudents->map(function ($s) use ($app, $paraMap) {
+                        // normalize para -> NAME (not ID)
+                        $paraId = $s['para'] ?? null;
+                        if ($paraId === '') $paraId = null;
+                        $paraIdNorm = is_numeric($paraId) ? (int) $paraId : $paraId;
+
+                        $paraDisplay = 'প্রযোজ্য নয়';
+                        if ($paraIdNorm) {
+                            // found name? then name | else fallback "ID: X"
+                            $paraDisplay = $paraMap[$paraIdNorm] ?? ('ID: ' . $paraIdNorm);
+                        }
+
                         return [
                             'registration'        => $s['registration'] ?? null,
                             'name'               => (string)($s['name'] ?? ''),
@@ -341,7 +372,10 @@ class ApplicationController extends Controller
                             'father_name'        => (string)($s['father_name'] ?? ''),
                             'father_name_arabic' => $s['father_name_arabic'] ?? null,
                             'date_of_birth'      => $s['date_of_birth'] ?? null,
-                            'para'               => $s['para'] ?? null,
+
+                            // ✅ এখানে para-তেই নাম পাঠাচ্ছি
+                            'para'               => $paraDisplay,
+
                             'address'            => $s['address'] ?? null,
 
                             'application_id'     => (int)$app->id,
@@ -352,7 +386,7 @@ class ApplicationController extends Controller
                         ];
                     });
                 })
-                    // সাজানো: রেজিস্ট্রেশন অনুযায়ী (ইচ্ছা করলে বদলাতে পারবেন)
+                    // সাজানো: রেজিস্ট্রেশন অনুযায়ী
                     ->sortBy(function ($row) {
                         $r = $row['registration'] ?? null;
                         return is_numeric($r) ? (int) $r : PHP_INT_MAX;
@@ -384,7 +418,7 @@ class ApplicationController extends Controller
                                 'name' => (string)($exam->name ?? ''),
                             ],
                             'institute'      => [
-                                'id'    => $instId,
+                                'id'    => (int)$instId,
                                 'name'  => (string)($inst->name ?? ''),
                                 'code'  => (string)($inst->institute_code ?? ''),
                             ],
@@ -392,7 +426,7 @@ class ApplicationController extends Controller
                                 'id'   => (int)($zamatId),
                                 'name' => (string)($zamat->name ?? ''),
                             ],
-                            // Optional headers (যদি প্রিন্টে দেখাতে চান)
+                            // Optional headers
                             'area_name'      => (string)($area->name ?? ''),
                             'center_name'    => (string)($center->name ?? ''),
                             'group_name'     => (string)($group->name ?? ''),
@@ -414,7 +448,6 @@ class ApplicationController extends Controller
             'pages'    => $pages,
         ]);
     }
-
 
     public function centerZamatStudentSummary(Request $request)
     {
