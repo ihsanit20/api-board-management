@@ -5,6 +5,8 @@ use App\Http\Controllers\ApplicationPaymentController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CenterController;
+use App\Http\Controllers\CommitteeController;
+use App\Http\Controllers\CommitteeMemberController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExaminerController;
@@ -163,6 +165,14 @@ Route::get('/application-payments/{id}', [ApplicationPaymentController::class, '
 
 Route::get('/application-payments/{exam}/institutes/{institute}', [ApplicationPaymentController::class, 'byExamInstitute']);
 
+Route::get('/committees', [CommitteeController::class, 'index']);
+Route::get('/committees/{committee}', [CommitteeController::class, 'show']);
+
+Route::get('/committees/{committee}/members', [CommitteeMemberController::class, 'index']);
+Route::get('/members/{member}', [CommitteeMemberController::class, 'show']);
+
+Route::get('/committees-with-members', [CommitteeMemberController::class, 'publicAllByCommittee']);
+
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 
     Route::get('/users', [UserController::class, 'index']);
@@ -235,7 +245,16 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
 
         Route::get('/application-payments', [ApplicationPaymentController::class, 'index']);
         Route::post('/application-payments', [ApplicationPaymentController::class, 'store']);
-        Route::get('/application-payments/exams/{exam}', [ApplicationPaymentController::class, 'byExam']); // list page
+        Route::get('/application-payments/exams/{exam}', [ApplicationPaymentController::class, 'byExam']);
+
+        Route::post('/committees', [CommitteeController::class, 'store']);
+        Route::put('/committees/{committee}', [CommitteeController::class, 'update']);
+        Route::patch('/committees/{committee}', [CommitteeController::class, 'update']);
+
+        Route::post('/committees/{committee}/members', [CommitteeMemberController::class, 'store']);
+        Route::put('/members/{member}', [CommitteeMemberController::class, 'update']);
+        Route::patch('/members/{member}', [CommitteeMemberController::class, 'update']);
+        Route::post('/committees/{committee}/members/reorder', [CommitteeMemberController::class, 'reorder']);
     });
 
     Route::middleware('role:Super Admin,Developer')->group(function () {
@@ -304,6 +323,9 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy']);
 
         Route::delete('/applications/{id}', [ApplicationController::class, 'destroy']);
+
+        Route::delete('/committees/{committee}', [CommitteeController::class, 'destroy']);
+        Route::delete('/members/{member}', [CommitteeMemberController::class, 'destroy']);
     });
 
     Route::middleware('role:Developer')->group(function () {});
