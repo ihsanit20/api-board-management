@@ -6,6 +6,7 @@ use App\Models\Application;
 use App\Models\Area;
 use App\Models\Exam;
 use App\Models\Institute;
+use App\Models\InstituteInfo;
 use Illuminate\Http\Request;
 
 class InstituteController extends Controller
@@ -67,7 +68,6 @@ class InstituteController extends Controller
 
         return response()->json($institutes);
     }
-
 
     public function instituteCounts()
     {
@@ -237,13 +237,29 @@ class InstituteController extends Controller
         return response()->json($institute, 201);
     }
 
-
     public function show(string $id)
     {
         $institute = Institute::findOrFail($id);
 
         return response()->json($institute);
     }
+
+    public function instituteDetails(string $id)
+    {
+        // Institute + Area
+        $institute = Institute::query()
+            ->with(['area:id,name,area_code'])
+            ->findOrFail($id);
+
+        // Institute Info (may be null)
+        $info = InstituteInfo::where('institute_id', $institute->id)->first();
+
+        return response()->json([
+            'institute'       => $institute,
+            'institute_info'  => $info,
+        ]);
+    }
+
 
     public function instituteByCode(string $institute_code)
     {

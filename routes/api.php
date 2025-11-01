@@ -180,6 +180,9 @@ Route::get('/institute-applications/prefill', [InstituteApplicationController::c
 Route::get('/institute-applications/{id}/track', [InstituteApplicationController::class, 'track'])
     ->whereNumber('id');
 
+Route::get('/institutes/{id}/details', [InstituteController::class, 'instituteDetails'])
+    ->whereNumber('id');
+
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 
     Route::get('/users', [UserController::class, 'index']);
