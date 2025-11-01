@@ -15,6 +15,7 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FeeCollectionController;
 use App\Http\Controllers\FeeController;
 use App\Http\Controllers\GroupController;
+use App\Http\Controllers\InstituteApplicationController;
 use App\Http\Controllers\InstituteController;
 use App\Http\Controllers\LastExamResultController;
 use App\Http\Controllers\LetterDistributionCenterController;
@@ -173,6 +174,12 @@ Route::get('/members/{member}', [CommitteeMemberController::class, 'show']);
 
 Route::get('/committees-with-members', [CommitteeMemberController::class, 'publicAllByCommittee']);
 
+Route::post('/institute-applications', [InstituteApplicationController::class, 'store']); // NEW/UPDATE submit
+Route::get('/institute-applications/suggest-matches', [InstituteApplicationController::class, 'suggestMatches']); // name/phone search
+Route::get('/institute-applications/prefill', [InstituteApplicationController::class, 'prefill']); // ?institute_id=
+Route::get('/institute-applications/{id}/track', [InstituteApplicationController::class, 'track'])
+    ->whereNumber('id');
+
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 
     Route::get('/users', [UserController::class, 'index']);
@@ -197,6 +204,11 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
     Route::post('/quran-questions', [QuranQuestionController::class, 'store']);
     Route::put('/quran-questions/{id}', [QuranQuestionController::class, 'update']);
 
+    Route::get('/institute-applications', [InstituteApplicationController::class, 'index']);
+    Route::get('/institute-applications/{id}', [InstituteApplicationController::class, 'show'])
+        ->whereNumber('id');
+    Route::get('/institute-applications/{id}/diff', [InstituteApplicationController::class, 'diff'])
+        ->whereNumber('id');
 
     Route::middleware('role:Admin,Super Admin,Developer')->group(function () {
         Route::post('/institutes', [InstituteController::class, 'store']);
@@ -255,6 +267,17 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
         Route::put('/members/{member}', [CommitteeMemberController::class, 'update']);
         Route::patch('/members/{member}', [CommitteeMemberController::class, 'update']);
         Route::post('/committees/{committee}/members/reorder', [CommitteeMemberController::class, 'reorder']);
+
+        Route::post('/institute-applications/{id}/approve', [InstituteApplicationController::class, 'approve'])
+            ->whereNumber('id');
+        Route::post('/institute-applications/{id}/reject', [InstituteApplicationController::class, 'reject'])
+            ->whereNumber('id');
+        Route::post('/institute-applications/{id}/needs-info', [InstituteApplicationController::class, 'needsInfo'])
+            ->whereNumber('id');
+        Route::post('/institute-applications/{id}/attach', [InstituteApplicationController::class, 'attachToInstitute'])
+            ->whereNumber('id');
+        Route::patch('/institute-applications/{id}', [InstituteApplicationController::class, 'update'])
+            ->whereNumber('id');
     });
 
     Route::middleware('role:Super Admin,Developer')->group(function () {
@@ -326,6 +349,9 @@ Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])
 
         Route::delete('/committees/{committee}', [CommitteeController::class, 'destroy']);
         Route::delete('/members/{member}', [CommitteeMemberController::class, 'destroy']);
+
+        Route::delete('/institute-applications/{id}', [InstituteApplicationController::class, 'destroy'])
+            ->whereNumber('id');
     });
 
     Route::middleware('role:Developer')->group(function () {});
