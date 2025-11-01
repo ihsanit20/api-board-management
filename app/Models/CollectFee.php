@@ -14,6 +14,7 @@ class CollectFee extends Model
 
     protected $fillable = [
         'student_ids',
+        'registrations',
         'total_amount',
         'payment_method',
         'transaction_id',
@@ -26,6 +27,7 @@ class CollectFee extends Model
 
     protected $casts = [
         'student_ids' => 'array',
+        'registrations' => 'array',
     ];
 
     public function students()
@@ -57,5 +59,4 @@ class CollectFee extends Model
     {
         return $this->belongsTo(Zamat::class);
     }
-
 }

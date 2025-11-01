@@ -28,6 +28,7 @@ use App\Http\Controllers\ResultController;
 use App\Http\Controllers\ResultSummaryController;
 use App\Http\Controllers\SiteSettingsController;
 use App\Http\Controllers\SmsController;
+use App\Http\Controllers\StudentApplicationController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\UserController;
@@ -182,6 +183,8 @@ Route::get('/institute-applications/{id}/track', [InstituteApplicationController
 
 Route::get('/institutes/{id}/details', [InstituteController::class, 'instituteDetails'])
     ->whereNumber('id');
+
+Route::match(['get', 'post'], '/student-applications/registered-students', [StudentApplicationController::class, 'registeredStudents']);
 
 Route::middleware(['auth:sanctum', 'role:Operator,Admin,Super Admin,Developer'])->group(function () {
 
